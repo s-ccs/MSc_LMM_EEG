@@ -1,3 +1,1091 @@
+### A Pluto.jl notebook ###
+# v0.19.9
+
+using Markdown
+using InteractiveUtils
+
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
+# ╔═╡ d4997eeb-7b84-4170-8410-f02e087cfe74
+begin
+	# Imports
+	
+	using MixedModelsSim
+	using MixedModels
+	using DataFrames
+	using CairoMakie
+	using DSP
+	using Random
+	using PlutoUI
+	using PlutoUI.ExperimentalLayout: vbox, hbox, Div
+	using HypertextLiteral
+	using ColorSchemes
+	using Statistics
+
+end
+
+# ╔═╡ a843de36-a1fc-4a60-8c3c-4e039866afdb
+"""
+	:root {
+			--image-filters: invert(1) hue-rotate(180deg) contrast(0.8);
+			--out-of-focus-opacity: 0.5;
+			--main-bg-color: hsl(0deg 0% 12%);
+			--rule-color: rgba(255, 255, 255, 0.15);
+			--kbd-border-color: #222222;
+			--header-bg-color: hsl(30deg 3% 16%);
+			--header-border-color: transparent;
+			--ui-button-color: rgb(255, 255, 255);
+			--cursor-color: white;
+			--normal-cell: 100, 100, 100;
+			--error-color: 255, 125, 125;
+			--normal-cell-color: rgba(var(--normal-cell), 0.2);
+			--dark-normal-cell-color: rgba(var(--normal-cell), 0.4);
+			--selected-cell-color: rgb(40 147 189 / 65%);
+			--code-differs-cell-color: #9b906c;
+			--error-cell-color: rgba(var(--error-color), 0.6);
+			--bright-error-cell-color: rgba(var(--error-color), 0.9);
+			--light-error-cell-color: rgba(var(--error-color), 0);
+			--export-bg-color: hsl(225deg 17% 18%);
+			--export-color: rgb(255 255 255 / 84%);
+			--export-card-bg-color: rgb(73 73 73);
+			--export-card-title-color: rgba(255, 255, 255, 0.85);
+			--export-card-text-color: rgb(255 255 255 / 70%);
+			--export-card-shadow-color: #0000001c;
+			--pluto-schema-types-color: rgba(255, 255, 255, 0.6);
+			--pluto-schema-types-border-color: rgba(255, 255, 255, 0.2);
+			--pluto-dim-output-color: hsl(0, 0, 70%);
+			--pluto-output-color: hsl(0deg 0% 77%);
+			--pluto-output-h-color: hsl(0, 0%, 90%);
+			--pluto-output-bg-color: var(--main-bg-color);
+			--a-underline: #ffffff69;
+			--blockquote-color: inherit;
+			--blockquote-bg: #2e2e2e;
+			--admonition-title-color: black;
+			--jl-message-color: rgb(38 90 32);
+			--jl-message-accent-color: rgb(131 191 138);
+			--jl-info-color: rgb(42 73 115);
+			--jl-info-accent-color: rgb(92 140 205);
+			--jl-warn-color: rgb(96 90 34);
+			--jl-warn-accent-color: rgb(221 212 100);
+			--jl-danger-color: rgb(100 47 39);
+			--jl-danger-accent-color: rgb(255, 117, 98);
+			--jl-debug-color: hsl(288deg 33% 27%);
+			--jl-debug-accent-color: hsl(283deg 59% 69%);
+			--table-border-color: rgba(255, 255, 255, 0.2);
+			--table-bg-hover-color: rgba(193, 192, 235, 0.15);
+			--pluto-tree-color: rgb(209 207 207 / 61%);
+			--disabled-cell-bg-color: rgba(139, 139, 139, 0.25);
+			--selected-cell-bg-color: rgb(42 115 205 / 78%);
+			--hover-scrollbar-color-1: rgba(0, 0, 0, 0.15);
+			--hover-scrollbar-color-2: rgba(0, 0, 0, 0.05);
+			--shoulder-hover-bg-color: rgba(255, 255, 255, 0.05);
+			--pluto-logs-bg-color: hsl(240deg 10% 29%);
+			--pluto-logs-progress-fill: #5f7f5b;
+			--pluto-logs-progress-border: hsl(210deg 35% 72%);
+			--nav-h1-text-color: white;
+			--nav-filepicker-color: #b6b6b6;
+			--nav-filepicker-border-color: #c7c7c7;
+			--nav-process-status-bg-color: rgb(82, 82, 82);
+			--nav-process-status-color: var(--pluto-output-h-color);
+			--restart-recc-header-color: rgb(44 106 157 / 56%);
+			--restart-req-header-color: rgb(145 66 60 / 56%);
+			--dead-process-header-color: rgba(250, 75, 21, 0.473);
+			--loading-header-color: hsl(0deg 0% 20% / 50%);
+			--disconnected-header-color: rgba(255, 169, 114, 0.56);
+			--binder-loading-header-color: hsl(51deg 64% 90% / 50%);
+			--loading-grad-color-1: #a9d4f1;
+			--loading-grad-color-2: #d0d4d7;
+			--overlay-button-bg: #2c2c2c;
+			--overlay-button-border: #c7a74670;
+			--overlay-button-color: white;
+			--input-context-menu-border-color: rgba(255, 255, 255, 0.1);
+			--input-context-menu-bg-color: rgb(39, 40, 47);
+			--input-context-menu-soon-color: #b1b1b144;
+			--input-context-menu-hover-bg-color: rgba(255, 255, 255, 0.1);
+			--input-context-menu-li-color: #c7c7c7;
+			--pkg-popup-bg: #3d2f44;
+			--pkg-popup-border-color: #574f56;
+			--pkg-popup-buttons-bg-color: var(--input-context-menu-bg-color);
+			--black: white;
+			--white: black;
+			--pkg-terminal-bg-color: #252627;
+			--pkg-terminal-border-color: #c3c3c388;
+			--pluto-runarea-bg-color: rgb(43, 43, 43);
+			--pluto-runarea-span-color: hsl(353, 5%, 64%);
+			--dropruler-bg-color: rgba(255, 255, 255, 0.1);
+			--jlerror-header-color: #d9baba;
+			--jlerror-mark-bg-color: rgb(0 0 0 / 18%);
+			--jlerror-a-bg-color: rgba(82, 58, 58, 0.5);
+			--jlerror-a-border-left-color: #704141;
+			--jlerror-mark-color: #b1a9a9;
+			--helpbox-bg-color: rgb(30 34 31);
+			--helpbox-box-shadow-color: #00000017;
+			--helpbox-header-bg-color: #2c3e36;
+			--helpbox-header-color: rgb(255 248 235);
+			--helpbox-notfound-header-color: rgb(139, 139, 139);
+			--helpbox-text-color: rgb(230, 230, 230);
+			--code-section-bg-color: rgb(44, 44, 44);
+			--code-section-border-color: #555a64;
+			--footer-color: #cacaca;
+			--footer-bg-color: rgb(38, 39, 44);
+			--footer-atag-color: rgb(114, 161, 223);
+			--footer-input-border-color: #6c6c6c;
+			--footer-filepicker-button-color: black;
+			--footer-filepicker-focus-color: #9d9d9d;
+			--footnote-border-color: rgba(114, 225, 231, 0.15);
+			--undo-delete-box-shadow-color: rgba(213, 213, 214, 0.2);
+			--cm-editor-tooltip-border-color: rgba(0, 0, 0, 0.2);
+			--cm-editor-li-aria-selected-bg-color: #3271e7;
+			--cm-editor-li-aria-selected-color: white;
+			--cm-editor-li-notexported-color: rgba(255, 255, 255, 0.5);
+			--code-background: hsl(222deg 16% 19%);
+			--cm-code-differs-gutters-color: rgb(235 213 28 / 11%);
+			--cm-line-numbers-color: #8d86875e;
+			--cm-selection-background: hsl(215deg 64% 59% / 48%);
+			--cm-selection-background-blurred: hsl(215deg 0% 59% / 48%);
+			--cm-editor-text-color: #ffe9fc;
+			--cm-comment-color: #e96ba8;
+			--cm-atom-color: hsl(8deg 72% 62%);
+			--cm-number-color: hsl(271deg 45% 64%);
+			--cm-property-color: #f99b15;
+			--cm-keyword-color: #ff7a6f;
+			--cm-string-color: hsl(20deg 69% 59%);
+			--cm-var-color: #afb7d3;
+			--cm-var2-color: #06b6ef;
+			--cm-macro-color: #82b38b;
+			--cm-builtin-color: #5e7ad3;
+			--cm-function-color: #f99b15;
+			--cm-type-color: hsl(51deg 32% 44%);
+			--cm-bracket-color: #a2a273;
+			--cm-tag-color: #ef6155;
+			--cm-link-color: #815ba4;
+			--cm-error-bg-color: #ef6155;
+			--cm-error-color: #f7f7f7;
+			--cm-matchingBracket-color: white;
+			--cm-matchingBracket-bg-color: #c58c237a;
+			--cm-placeholder-text-color: rgb(255 255 255 / 20%);
+			--autocomplete-menu-bg-color: var(--input-context-menu-bg-color);
+			--index-text-color: rgb(199, 199, 199);
+			--index-clickable-text-color: rgb(235, 235, 235);
+			--docs-binding-bg: #323431;
+			--cm-html-color: #00ab85;
+			--cm-html-accent-color: #00e7b4;
+			--cm-css-color: #ebd073;
+			--cm-css-accent-color: #fffed2;
+			--cm-css-why-doesnt-codemirror-highlight-all-the-text-aaa: #ffffea;
+			--cm-md-color: #a2c9d5;
+			--cm-md-accent-color: #00a9d1;
+		}
+"""
+
+# ╔═╡ 7ddaa28d-5ceb-4f6b-b1c5-bc10fb597d0b
+begin
+	html"""
+	<style>
+		
+		
+		div.plutoui-sidebar.aside {
+			position: fixed;
+			right: 1rem;
+			top: 10rem;
+			width: min(80vw, 25%);
+			padding: 10px;
+			border: 3px solid rgba(0, 0, 0, 0.15);
+			border-radius: 10px;
+			box-shadow: 0 0 11px 0px #00000010;
+			max-height: calc(100vh - 5rem - 56px);
+			overflow: auto;
+			z-index: 40;
+			background: white;
+			transition: transform 300ms cubic-bezier(0.18, 0.89, 0.45, 1.12);
+			color: var(--pluto-output-color);
+			background-color: var(--main-bg-color);
+		}
+
+		.second {
+			top: 18rem !important;
+		}
+
+		.third {
+			top: 24.5rem !important;
+		}
+		
+		div.plutoui-sidebar.aside.hide {
+			transform: translateX(calc(100% - 28px));
+		}
+		
+		.plutoui-sidebar header {
+			display: block;
+			font-size: 1.5em;
+			margin-top: -0.1em;
+			margin-bottom: 0.4em;
+			padding-bottom: 0.4em;
+			margin-left: 0;
+			margin-right: 0;
+			font-weight: bold;
+			border-bottom: 2px solid rgba(0, 0, 0, 0.15);
+		}
+		
+		.plutoui-sidebar.aside.hide .open-sidebar, .plutoui-sidebar.aside:not(.hide) .closed-sidebar, .plutoui-sidebar:not(.aside) .closed-sidebar {
+			display: none;
+		}
+
+		.sidebar-toggle {
+			cursor: pointer;
+		}
+
+		div.admonition.info {
+			background: rgba(60,60,60,1) !important;
+			border-color: darkgrey !important
+		}
+		div.admonition.info .admonition-title {
+			background: darkgrey !important;
+		}
+		
+	</style>
+	<script>
+		document.addEventListener('click', event => {
+			if (event.target.classList.contains("sidebar-toggle")) {
+				document.querySelectorAll('.plutoui-sidebar').forEach(function(el) {
+   					el.classList.toggle("hide");
+				});
+			}
+		});
+	</script>
+	"""
+end
+
+# ╔═╡ c4e2b79b-bb0f-4c8a-9137-25c4429c42b5
+begin
+	sidebar = Div([@htl("""<header>
+			<span class="sidebar-toggle open-sidebar">🕹</span>
+     		<span class="sidebar-toggle closed-sidebar">🕹</span>
+			Interactive Sliders
+			</header>"""),
+		md"""Here are all interactive bits of the notebook at one place.\
+		Feel free to change them!"""
+	], class="plutoui-sidebar aside")
+end
+
+# ╔═╡ adb8e831-f369-47f3-8b93-2d1e285e408a
+slider_rng = md"""rng $(@bind s PlutoUI.Slider(1:50, show_value=true))""";
+
+# ╔═╡ 0f40a070-c0fe-4ee9-96e1-9af9ab1c6c5c
+slider_β₁ = md"""β₁ $(@bind β₁ PlutoUI.Slider(0:5:50, show_value=true))""";
+
+# ╔═╡ 25dd3564-4905-427f-8b3a-4a5a30e078d8
+slider_β₂ = md"""β₂ $(@bind β₂ PlutoUI.Slider(0:5:50, show_value=true))""";
+
+# ╔═╡ ab909622-6ab8-4676-8076-8377665305fa
+slider_β₃ = md"""β₃ $(@bind β₃ PlutoUI.Slider(0:5:50, show_value=true))""";
+
+# ╔═╡ 7f26939f-42ad-4d89-af24-2def85ac66ea
+slider_a = md"""a $(@bind a PlutoUI.Slider(0:10, show_value=true))""";
+
+# ╔═╡ 5da1e602-a5e5-4eff-a20d-b13728461ab9
+slider_b = md"""b $(@bind b PlutoUI.Slider(0:50, show_value=true))""";
+
+# ╔═╡ 248e912f-7f61-4ea2-a5f4-042412693a2c
+slider_c = md"""c $(@bind c PlutoUI.Slider(0:10, show_value=true))""";
+
+# ╔═╡ 9bf01202-aa40-443c-925f-8106d9b09627
+begin
+	sidebar2 = Div([
+		md""" **Sliders**""",
+		slider_rng,
+		md"""""",
+		slider_β₁,
+		slider_β₂,
+		slider_β₃,
+		slider_a,
+		slider_b,
+		slider_c
+	], class="plutoui-sidebar aside second")
+end
+
+# ╔═╡ bf95ae76-62a6-484e-b8bc-4ce9a10eb934
+md"""
+# Helper Functions
+"""
+
+# ╔═╡ 44a2bb3a-cd43-4c3b-9010-149738b57c0e
+"""
+Function generate hanning window
+"""
+function gen_han(τ, fs, peak)
+    hanLen = Int(τ * fs / 3)
+    han = hanning(hanLen, zerophase = false)
+    sig = zeros(Int(τ * fs))
+    sig[1+hanLen*(peak-1):hanLen*peak] .= han
+    return sig
+end
+
+# ╔═╡ 9163ceda-080b-11ed-0685-7db1269a6055
+md"""
+## 2x2 :  y ~ 1 + (1 | subject)
+"""
+
+# ╔═╡ 6463f0e5-bb1d-405a-8308-e0dcf598451e
+# ╠═╡ disabled = true
+#=╠═╡
+let
+	# random seed
+	rng = MersenneTwister(s)
+	rng_copy = deepcopy(rng)
+
+	# number of subjects, items
+	n_sub = 2
+    n_item = 2
+
+	# simulate experimetn conditions with dummy values (dv)
+	subj_btwn = item_btwn = both_win = nothing
+	#item_btwn = Dict("stimType" => ["I", "II"]) # needed?
+	evt = DataFrame(simdat_crossed(n_sub, n_item, subj_btwn = subj_btwn, item_btwn 
+		= item_btwn, both_win = both_win,),)
+
+	# formula
+	f = @formula dv ~ 1 + (1|subj)
+
+	# mixed model 
+	m = MixedModels.fit(MixedModel, f, evt)
+
+	# new parameters for simulation
+	τ = 10 
+	fs = 12 
+	peak = 2
+    β = [β₁, β₂] 
+    σs1 = [a, b, c]
+    σ = 1 #??? (never used?)
+	σ_lmm = .00001 
+	σs = σs1 ./ σ_lmm
+
+	# initialize empty matrix (samples * groups) & basisfunction
+	epoch_dat = zeros(Int(τ * fs), size(evt, 1)) 
+	basis = gen_han(τ, fs, peak) 
+
+	# iterate over each timepoint
+	for t = 1:size(epoch_dat, 1)
+		b = basis[t]
+
+		# update random effects structure of dummy model 
+		MixedModelsSim.update!(m, 
+			subj=create_re(b .* σs[1])
+		)
+		
+		# simulate with new random effects structure
+		simulate!(
+			deepcopy(rng_copy), 
+			m, 
+			β = [b .* β[1]],#, b .* β[2]],
+			σ = σ_lmm)
+		
+		epoch_dat[t, :] = m.y
+	end	
+
+	# additional stuff for plotting
+	fig = Figure()
+	ax = Axis(fig[1, 1])
+	limits!(ax, 0, 120, -60, 60)
+	
+	ls = [nothing, nothing]#, :dash]
+	colors = ColorSchemes.tab10[:]#repeat(ColorSchemes.tab10[:], inner=2)
+	
+	for i in 1:2*2
+		lines!(epoch_dat[:,i], linestyle=ls[(i%2)+1], color=colors[i], label="$(evt.subj[i])-$(evt.item[i])")
+	end
+
+	evt.dv = epoch_dat'[:,60]
+	m2 = MixedModels.fit(MixedModel, f, evt)
+
+	print(m2)
+	
+	current_figure()
+end
+  ╠═╡ =#
+
+# ╔═╡ 1020d52b-c831-4e1b-a3b8-eca2a20caa3a
+md"""
+## 2x2 :  y ~ -1 + (1 | subject)
+"""
+
+# ╔═╡ 0c60e8bc-18ec-4f5e-ba08-29c8bb0ab789
+# ╠═╡ disabled = true
+#=╠═╡
+let
+	# random seed
+	rng = MersenneTwister(s)
+	rng_copy = deepcopy(rng)
+
+	# number of subjects, items
+	n_sub = 10
+    n_item = 2
+
+	# simulate experimetn conditions with dummy values (dv)
+	subj_btwn = item_btwn = both_win = nothing
+	#item_btwn = Dict("stimType" => ["I", "II"]) # needed?
+	evt = DataFrame(simdat_crossed(n_sub, n_item, subj_btwn = subj_btwn, item_btwn 
+		= item_btwn, both_win = both_win,),)
+
+	# formula
+	f = @formula dv ~ -1 + (1|subj)
+
+	# mixed model 
+	m = MixedModels.fit(MixedModel, f, evt)
+
+	println(ranef(m))
+
+	# new parameters for simulation
+	τ = 10 
+	fs = 12 
+	peak = 2
+    #β = [β₁, β₂] 
+    σs1 = [a]
+    σ = 1 #??? (never used?)
+	σ_lmm = .00001 
+	σs = σs1 ./ σ_lmm
+
+	# initialize empty matrix (samples * groups) & basisfunction
+	epoch_dat = zeros(Int(τ * fs), size(evt, 1)) 
+	basis = gen_han(τ, fs, peak) 
+
+	# iterate over each timepoint
+	for t = 1:size(epoch_dat, 1)
+		b = basis[t]
+
+		# update random effects structure of dummy model 
+		MixedModelsSim.update!(m, 
+			subj=create_re(b .* σs[1])
+		)
+		
+		# simulate with new random effects structure
+		simulate!(
+			deepcopy(rng_copy), 
+			m, 
+			β = [],#[b .* β[1], b .* β[2], 1],
+			σ = σ_lmm)
+		
+		epoch_dat[t, :] = m.y
+	end	
+
+	# additional stuff for plotting
+	fig = Figure()
+	ax = Axis(fig[1, 1])
+	limits!(ax, 0, 120, -60, 60)
+	
+	ls = [nothing, nothing]#, :dash]
+	colors = ColorSchemes.tab10[:]#repeat(ColorSchemes.tab10[:], inner=2)
+	
+	for i in 1:2*2
+		lines!(epoch_dat[:,i], linestyle=ls[(i%2)+1], color=colors[i], label="$(evt.subj[i])-$(evt.item[i])")
+	end
+	
+	evt.dv = epoch_dat'[:,60]
+	m2 = MixedModels.fit(MixedModel, f, evt)
+
+	println(m2)
+	
+	current_figure()
+end
+  ╠═╡ =#
+
+# ╔═╡ 769f906d-0228-44bd-94b9-fcc3877d49db
+md"""
+## 2x2 :  y ~ 1 + subj + (1 + item | subject) + (1|item)
+"""
+
+# ╔═╡ c47c923b-84d1-4cb4-baa3-78cea04166de
+# ╠═╡ disabled = true
+#=╠═╡
+let
+	# random seed
+	rng = MersenneTwister(s)
+	rng_copy = deepcopy(rng)
+
+	# number of subjects, items
+	n_sub = 2
+    n_item = 2
+
+	# simulate experimetn conditions with dummy values (dv)
+	subj_btwn = item_btwn = both_win = nothing
+	#item_btwn = Dict("stimType" => ["I", "II"]) # needed?
+	evt = DataFrame(simdat_crossed(n_sub, n_item, subj_btwn = subj_btwn, item_btwn 
+		= item_btwn, both_win = both_win,),)
+
+	#sort!(evt, [:subj, :item], rev=[false, true])
+	sort!(evt)
+	
+	# formula
+	f = @formula dv ~ 1 + subj + (1 + item|subj) + (1|item)
+
+	# mixed model 
+	m = MixedModels.fit(MixedModel, f, evt)
+	#print(ranef(m))
+
+	# new parameters for simulation
+	τ = 10 
+	fs = 12 
+	peak = 2
+    β = [β₁, β₂] 
+    σs1 = [a, b, c]
+    σ = 1 #??? (never used?)
+	σ_lmm = .00001 
+	σs = σs1 ./ σ_lmm
+
+	# initialize empty matrix (samples * groups) & basisfunction
+	epoch_dat = zeros(Int(τ * fs), size(evt, 1)) 
+	basis = gen_han(τ, fs, peak) 
+
+	# iterate over each timepoint
+	for t = 1:size(epoch_dat, 1)
+		b = basis[t]
+
+		# update random effects structure of dummy model 
+		MixedModelsSim.update!(m, 
+			subj=create_re(b .* σs[1], b .* σs[2]),
+			item=create_re(b .* σs[3])
+		)
+		
+		# simulate with new random effects structure
+		simulate!(
+			deepcopy(rng_copy), 
+			m, 
+			β = [b .* β[1], b .* β[2]],
+			σ = σ_lmm)
+		
+		epoch_dat[t, :] = m.y
+	end	
+
+	# additional stuff for plotting
+	fig = Figure()
+	ax = Axis(fig[1, 1])
+	limits!(ax, 0, 120, -60, 60)
+	
+	ls = [nothing, :dash]
+	colors = repeat(ColorSchemes.tab10[:], inner=2)
+	
+	for i in 1:2*2
+		lines!(epoch_dat[:,i], linestyle=ls[(i%2)+1], color=colors[i], label="$(evt.subj[i])-$(evt.item[i])")
+	end
+
+	evt.dv = epoch_dat'[:,60]
+	m2 = MixedModels.fit(MixedModel, f, evt)
+
+	print(evt)
+	println(m2)
+	println(raneftables(m2))
+	
+	current_figure()
+end
+  ╠═╡ =#
+
+# ╔═╡ 020f45aa-23d1-4295-be18-7f124b9c3c4c
+md"""
+## 2x2 :  y ~ -1 + subj + (1 + item | subject) + (1|item)
+"""
+
+# ╔═╡ 8212b071-c0e7-46d9-b24f-499b179bdfc0
+# ╠═╡ disabled = true
+#=╠═╡
+let
+	# random seed
+	rng = MersenneTwister(s)
+	rng_copy = deepcopy(rng)
+
+	# number of subjects, items
+	n_sub = 2
+    n_item = 2
+
+	# simulate experimetn conditions with dummy values (dv)
+	subj_btwn = item_btwn = both_win = nothing
+	#item_btwn = Dict("stimType" => ["I", "II"]) # needed?
+	evt = DataFrame(simdat_crossed(n_sub, n_item, subj_btwn = subj_btwn, item_btwn 
+		= item_btwn, both_win = both_win,),)
+
+	#sort!(evt, [:subj, :item], rev=[false, true])
+	sort!(evt)
+	
+	# formula
+	f = @formula dv ~ -1 + subj + (1 + item|subj) + (1|item)
+
+	# mixed model 
+	m = MixedModels.fit(MixedModel, f, evt)
+	#print(ranef(m))
+
+	# new parameters for simulation
+	τ = 10 
+	fs = 12 
+	peak = 2
+    β = [β₁, β₂] 
+    σs1 = [a, b, c]
+    σ = 1 #??? (never used?)
+	σ_lmm = .00001 
+	σs = σs1 ./ σ_lmm
+
+	# initialize empty matrix (samples * groups) & basisfunction
+	epoch_dat = zeros(Int(τ * fs), size(evt, 1)) 
+	basis = gen_han(τ, fs, peak) 
+
+	# iterate over each timepoint
+	for t = 1:size(epoch_dat, 1)
+		b = basis[t]
+
+		# update random effects structure of dummy model 
+		MixedModelsSim.update!(m, 
+			subj=create_re(b .* σs[1], b .* σs[2]),
+			item=create_re(b .* σs[3])
+		)
+		
+		# simulate with new random effects structure
+		simulate!(
+			deepcopy(rng_copy), 
+			m, 
+			β = [b .* β[1], b .* β[2]],
+			σ = σ_lmm)
+		
+		epoch_dat[t, :] = m.y
+	end	
+
+	# additional stuff for plotting
+	fig = Figure()
+	ax = Axis(fig[1, 1])
+	limits!(ax, 0, 120, -60, 60)
+	
+	ls = [nothing, :dash]
+	colors = repeat(ColorSchemes.tab10[:], inner=2)
+	
+	for i in 1:2*2
+		lines!(epoch_dat[:,i], linestyle=ls[(i%2)+1], color=colors[i], label="$(evt.subj[i])-$(evt.item[i])")
+	end
+
+	evt.dv = epoch_dat'[:,60]
+	m2 = MixedModels.fit(MixedModel, f, evt)
+
+	print(evt)
+	println(m2)
+	println(raneftables(m2))
+	
+	current_figure()
+end
+  ╠═╡ =#
+
+# ╔═╡ 18052c8b-85b8-4004-8cd8-08c690a32888
+md"""
+## 2x3 : y ~ 1 + (1 | subject)
+"""
+
+# ╔═╡ bf4f9a09-2ace-49f4-902a-55fbfe13e64d
+# ╠═╡ show_logs = false
+# ╠═╡ disabled = true
+#=╠═╡
+let
+	# random seed
+	rng = MersenneTwister(s)
+	rng_copy = deepcopy(rng)
+
+	# number of subjects, items
+	n_sub = 2
+    n_item = 2
+
+	# simulate experimetn conditions with dummy values (dv)
+	subj_btwn = item_btwn = both_win = nothing
+	#item_btwn = Dict("stimType" => ["I", "II"]) # needed?
+	evt = DataFrame(simdat_crossed(n_sub, n_item, subj_btwn = subj_btwn, item_btwn 
+		= item_btwn, both_win = both_win,),)
+
+	# formula
+	f = @formula dv ~ 1 + (1|subj)
+
+	# mixed model 
+	m = MixedModels.fit(MixedModel, f, evt)
+
+	# new parameters for simulation
+	τ = 10 
+	fs = 12 
+	peak = 2
+    β = [β₁, β₂] 
+    σs1 = [a, b, c]
+    σ = 1 #??? (never used?)
+	σ_lmm = .00001 
+	σs = σs1 ./ σ_lmm
+
+	# initialize empty matrix (samples * groups) & basisfunction
+	epoch_dat = zeros(Int(τ * fs), size(evt, 1)) 
+	basis = gen_han(τ, fs, peak) 
+
+	# iterate over each timepoint
+	for t = 1:size(epoch_dat, 1)
+		b = basis[t]
+
+		# update random effects structure of dummy model 
+		MixedModelsSim.update!(m, 
+			subj=create_re(b .* σs[1])
+		)
+		
+		# simulate with new random effects structure
+		simulate!(
+			deepcopy(rng_copy), 
+			m, 
+			β = [b .* β[1]],#, b .* β[2]],
+			σ = σ_lmm)
+		
+		epoch_dat[t, :] = m.y
+	end	
+
+	# additional stuff for plotting
+	fig = Figure()
+	ax = Axis(fig[1, 1])
+	limits!(ax, 0, 120, -60, 60)
+	
+	ls = [nothing, nothing]#, :dash]
+	colors = ColorSchemes.tab10[:]#repeat(ColorSchemes.tab10[:], inner=2)
+	
+	for i in 1:2*2
+		lines!(epoch_dat[:,i], linestyle=ls[(i%2)+1], color=colors[i], label="$(evt.subj[i])-$(evt.item[i])")
+	end
+
+	evt.dv = epoch_dat'[:,60]
+	m2 = MixedModels.fit(MixedModel, f, evt)
+
+	print(m2)
+	
+	current_figure()
+end
+  ╠═╡ =#
+
+# ╔═╡ 00d86269-7d4f-4338-88c4-a6ba935f41c3
+md"""
+## 2x3 : y ~ -1 + (1 | subject)
+"""
+
+# ╔═╡ f00825cf-9177-4cf5-81dc-093a4e1598b0
+# ╠═╡ show_logs = false
+# ╠═╡ disabled = true
+#=╠═╡
+let
+	# random seed
+	rng = MersenneTwister(s)
+	rng_copy = deepcopy(rng)
+
+	# number of subjects, items
+	n_sub = 3
+    n_item = 2
+
+	# simulate experimetn conditions with dummy values (dv)
+	subj_btwn = item_btwn = both_win = nothing
+	#item_btwn = Dict("stimType" => ["I", "II"]) # needed?
+	evt = DataFrame(simdat_crossed(n_sub, n_item, subj_btwn = subj_btwn, item_btwn 
+		= item_btwn, both_win = both_win,),)
+
+	# formula
+	f = @formula dv ~ -1 + (1|subj)
+
+	# mixed model 
+	m = MixedModels.fit(MixedModel, f, evt)
+
+	println(ranef(m))
+
+	# new parameters for simulation
+	τ = 10 
+	fs = 12 
+	peak = 2
+    #β = [β₁, β₂] 
+    σs1 = [a]
+    σ = 1 #??? (never used?)
+	σ_lmm = .00001 
+	σs = σs1 ./ σ_lmm
+
+	# initialize empty matrix (samples * groups) & basisfunction
+	epoch_dat = zeros(Int(τ * fs), size(evt, 1)) 
+	basis = gen_han(τ, fs, peak) 
+
+	# iterate over each timepoint
+	for t = 1:size(epoch_dat, 1)
+		b = basis[t]
+
+		# update random effects structure of dummy model 
+		MixedModelsSim.update!(m, 
+			subj=create_re(b .* σs[1])
+		)
+		
+		# simulate with new random effects structure
+		simulate!(
+			deepcopy(rng_copy), 
+			m, 
+			β = [],#[b .* β[1], b .* β[2], 1],
+			σ = σ_lmm)
+		
+		epoch_dat[t, :] = m.y
+	end	
+
+	# additional stuff for plotting
+	fig = Figure()
+	ax = Axis(fig[1, 1])
+	limits!(ax, 0, 120, -60, 60)
+	
+	ls = [nothing, nothing]#, :dash]
+	colors = ColorSchemes.tab10[:]#repeat(ColorSchemes.tab10[:], inner=2)
+	
+	for i in 1:2*2
+		lines!(epoch_dat[:,i], linestyle=ls[(i%2)+1], color=colors[i], label="$(evt.subj[i])-$(evt.item[i])")
+	end
+	
+	evt.dv = epoch_dat'[:,60]
+	m2 = MixedModels.fit(MixedModel, f, evt)
+
+	println(m2)
+	
+	current_figure()
+end
+  ╠═╡ =#
+
+# ╔═╡ 4a4d5a5d-44bc-4920-b4cd-2b5697d215b4
+md"""
+## 3x2 :  y ~ 1 + subj + (1 + item | subject) + (1|item)
+"""
+
+# ╔═╡ 2e99350b-daa5-48e3-860e-35c9f47e6ff4
+# ╠═╡ show_logs = false
+let
+	# random seed
+	rng = MersenneTwister(s)
+	rng_copy = rng#deepcopy(rng)
+
+	# number of subjects, items
+	n_sub = 3
+    n_item = 2
+
+	# simulate experimetn conditions with dummy values (dv)
+	subj_btwn = item_btwn = both_win = nothing
+	item_btwn = Dict("stimType" => ["I", "II"]) # needed?
+	evt = DataFrame(simdat_crossed(n_sub, n_item, subj_btwn = subj_btwn, item_btwn 
+		= item_btwn, both_win = both_win,),)
+
+	#sort!(evt, [:subj, :item], rev=[false, true])
+	sort!(evt)
+	
+	# formula
+	f = @formula dv ~ 1 + stimType + (1 + stimType|subj) + (1|item)
+
+	# mixed model 
+	m = MixedModels.fit(MixedModel, f, evt)
+	#print(ranef(m))
+
+	# new parameters for simulation
+	τ = 10 
+	fs = 12 
+	peak = 2
+    β = [β₁, β₂, β₃]  
+    σs1 = [a, b, c]
+    σ = 1 #??? (never used?)
+	σ_lmm = .00001 
+	σs = σs1 ./ σ_lmm
+
+	# initialize empty matrix (samples * groups) & basisfunction
+	epoch_dat = zeros(Int(τ * fs), size(evt, 1)) 
+	basis = gen_han(τ, fs, peak) 
+
+	# iterate over each timepoint
+	for t = 1:size(epoch_dat, 1)
+		b = basis[t]
+
+		# update random effects structure of dummy model 
+		MixedModelsSim.update!(m, 
+			subj=create_re(b .* σs[1], b .* σs[2]),
+			item=create_re(b .* σs[3])
+		)
+		
+		# simulate with new random effects structure
+		simulate!(
+			deepcopy(rng_copy), 
+			m, 
+			β = [b .* β[1], b .* β[2], b .* β[3]],
+			σ = σ_lmm)
+		
+		epoch_dat[t, :] = m.y
+	end	
+
+	# additional stuff for plotting
+	fig = Figure()
+	ax = Axis(fig[1, 1])
+	limits!(ax, 0, 120, -60, 60)
+	
+	ls = [nothing, :dash]
+	colors = repeat(ColorSchemes.tab10[:], inner=2)
+	
+	for i in 1:n_sub*n_item
+		lines!(epoch_dat[:,i], linestyle=ls[(i%2)+1], color=colors[i], label="$(evt.subj[i])-$(evt.item[i])")
+	end
+
+	evt.dv = epoch_dat'[:,60]
+	m2 = MixedModels.fit(MixedModel, f, evt)
+
+	print(evt)
+	println(m2)
+	println(raneftables(m2))
+	
+	current_figure()
+end
+
+# ╔═╡ 260346ce-fbd8-40a2-a033-a3c748d75e78
+@formula
+
+# ╔═╡ 67d1ab74-7381-4e47-981e-f650ec31c69e
+md"""
+# Generic
+"""
+
+# ╔═╡ fcf73457-8d37-4977-bd20-e79406fd6635
+md"""
+### Parameters
+"""
+
+# ╔═╡ d205af00-1435-4e32-a3be-b875c1000580
+# ╠═╡ disabled = true
+#=╠═╡
+begin
+	# random seed
+	rng = MersenneTwister(s)
+	rng_copy = deepcopy(rng)
+
+	# number of subjects
+	n_sub = 2
+
+	# number of items
+	n_item = 2
+
+	# basis function parameters
+	τ = 10 
+	fs = 12 
+	peak = 2
+
+	# formula
+	f = @formula dv ~ 1 + subj + (1 + item|subj) + (1|item)
+	
+	# new model parameters
+	β = [β₁, β₂]  # depends on of fixed effects
+    σs1 = [a, b, c]
+	σ_lmm = .00001 
+	re = [[a, b], [c]] 
+
+	
+
+end
+  ╠═╡ =#
+
+# ╔═╡ df49282c-1752-49c8-b738-e6da8be36009
+#=╠═╡
+typeof(re)
+  ╠═╡ =#
+
+# ╔═╡ dbd94ed9-bdc3-4e7c-91b8-46dfb362de95
+#=╠═╡
+begin
+
+	# simulate experimetn conditions with dummy values (dv)
+	subj_btwn = item_btwn = both_win = nothing
+	evt = DataFrame(simdat_crossed(n_sub, n_item, subj_btwn = subj_btwn, item_btwn 
+		= item_btwn, both_win = both_win,),)
+
+	# sorting [depends on formula] (for plotting)
+	sort!(evt)
+
+	# mixed model 
+	m = MixedModels.fit(MixedModel, f, evt)
+end
+  ╠═╡ =#
+
+# ╔═╡ 004df210-cf67-496c-94b7-2112580c6228
+#=╠═╡
+begin
+	# initialize empty matrix (samples * groups)
+	epoch_dat = zeros(Int(τ * fs), size(evt, 1)) 
+	
+	# basisfunction
+	basis = gen_han(τ, fs, peak) 
+
+	# iterate over each timepoint
+	for t = 1:size(epoch_dat, 1)
+		b = basis[t]
+
+		# update random effects structure of dummy model 
+		MixedModelsSim.update!(m, 
+			[create_re((b .* (r)./ σ_lmm)...) for r in re]...
+		)
+		
+		# simulate with new random effects structure
+		simulate!(
+			deepcopy(rng_copy), 
+			m, 
+			β = b .* [β...],
+			σ = σ_lmm)
+		
+		epoch_dat[t, :] = m.y
+	end	
+end
+  ╠═╡ =#
+
+# ╔═╡ a5a0dd17-fd37-417d-bc6e-d3df71f6b197
+#=╠═╡
+begin
+	# additional stuff for plotting
+	fig = Figure()
+	ax = Axis(fig[1, 1])
+	limits!(ax, 0, 120, -60, 60)
+	
+	ls = [nothing, :dash]
+	ls2 = [:dot, :dashdot]
+	colors = repeat(ColorSchemes.tab10[:], inner=2)
+	
+	for i in 1:n_sub*n_item
+		lines!(epoch_dat[:,i], linestyle=ls[(i%2)+1], color=colors[i], label="$(evt.subj[i])-$(evt.item[i])")
+	end
+
+	evt.dv = epoch_dat'[:,60]
+	m2 = MixedModels.fit(MixedModel, f, evt)
+
+	#print(evt)
+	#println(m2)
+	#println(raneftables(m2))
+	
+	current_figure()
+end
+  ╠═╡ =#
+
+# ╔═╡ 00000000-0000-0000-0000-000000000001
+PLUTO_PROJECT_TOML_CONTENTS = """
+[deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
+DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+MixedModels = "ff71e718-51f3-5ec2-a782-8ffcbfa3c316"
+MixedModelsSim = "d5ae56c5-23ca-4a1f-b505-9fc4796fc1fe"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[compat]
+CairoMakie = "~0.8.12"
+ColorSchemes = "~3.19.0"
+DSP = "~0.7.6"
+DataFrames = "~1.3.4"
+HypertextLiteral = "~0.9.4"
+MixedModels = "~4.6.4"
+MixedModelsSim = "~0.2.6"
+PlutoUI = "~0.7.39"
+"""
+
+# ╔═╡ 00000000-0000-0000-0000-000000000002
+PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
 julia_version = "1.7.2"
@@ -8,6 +1096,12 @@ deps = ["ChainRulesCore", "LinearAlgebra"]
 git-tree-sha1 = "69f7020bd72f069c219b5e8c236c1fa90d2cb409"
 uuid = "621f4979-c628-5d54-868e-fcf4e3e8185c"
 version = "1.2.1"
+
+[[deps.AbstractPlutoDingetjes]]
+deps = ["Pkg"]
+git-tree-sha1 = "8eaf9f1b4921132a4cff3f36a1d9ba923b14a481"
+uuid = "6e696c72-6542-2067-7265-42206c756150"
+version = "1.1.4"
 
 [[deps.AbstractTrees]]
 git-tree-sha1 = "5c0b629df8a5566a06f5fef5100b53ea56e465a0"
@@ -28,18 +1122,6 @@ version = "0.4.1"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
-
-[[deps.ArrayInterface]]
-deps = ["ArrayInterfaceCore", "Compat", "IfElse", "LinearAlgebra", "Static"]
-git-tree-sha1 = "d6173480145eb632d6571c148d94b9d3d773820e"
-uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "6.0.23"
-
-[[deps.ArrayInterfaceCore]]
-deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
-git-tree-sha1 = "5bb0f8292405a516880a3809954cb832ae7a31c5"
-uuid = "30b0a656-2188-435a-8636-2ec0e6a096e2"
-version = "0.1.20"
 
 [[deps.Arrow]]
 deps = ["ArrowTypes", "BitIntegers", "CodecLz4", "CodecZstd", "DataAPI", "Dates", "Mmap", "PooledArrays", "SentinelArrays", "Tables", "TimeZones", "UUIDs"]
@@ -68,12 +1150,6 @@ git-tree-sha1 = "66771c8d21c8ff5e3a93379480a2307ac36863f7"
 uuid = "13072b0f-2c55-5437-9ae7-d433b7a33950"
 version = "1.0.1"
 
-[[deps.BSplines]]
-deps = ["LinearAlgebra", "OffsetArrays", "RecipesBase"]
-git-tree-sha1 = "5b609325fcb8f5fc124351b9267183722965860d"
-uuid = "488c2830-172b-11e9-1591-253b8a7df96d"
-version = "0.3.3"
-
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
@@ -89,12 +1165,6 @@ git-tree-sha1 = "5a814467bda636f3dde5c4ef83c30dd0a19928e0"
 uuid = "c3b6d118-76ef-56ca-8cc7-ebb389d030a1"
 version = "0.2.6"
 
-[[deps.BlockDiagonals]]
-deps = ["ChainRulesCore", "FillArrays", "FiniteDifferences", "LinearAlgebra"]
-git-tree-sha1 = "350372f249eb57922c44f6a4e762d6bcb75ef92a"
-uuid = "0a1fb500-61f7-11e9-3c65-f5ef3456f9f0"
-version = "0.1.36"
-
 [[deps.Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "19a35467a82e236ff51bc17a3a44b69ef35185a2"
@@ -105,6 +1175,18 @@ version = "1.0.8+0"
 git-tree-sha1 = "eb4cb44a499229b3b8426dcfb5dd85333951ff90"
 uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 version = "0.4.2"
+
+[[deps.Cairo]]
+deps = ["Cairo_jll", "Colors", "Glib_jll", "Graphics", "Libdl", "Pango_jll"]
+git-tree-sha1 = "d0b3f8b4ad16cb0a2988c6788646a5e6a17b6b1b"
+uuid = "159f3aea-2a34-519c-b102-8c37f9878175"
+version = "1.0.5"
+
+[[deps.CairoMakie]]
+deps = ["Base64", "Cairo", "Colors", "FFTW", "FileIO", "FreeType", "GeometryBasics", "LinearAlgebra", "Makie", "SHA"]
+git-tree-sha1 = "0483b660cfc7bff57e986c6d5af5179bcccdd8dc"
+uuid = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+version = "0.8.12"
 
 [[deps.Cairo_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "JLLWrappers", "LZO_jll", "Libdl", "Pixman_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll", "Zlib_jll", "libpng_jll"]
@@ -118,18 +1200,6 @@ git-tree-sha1 = "f641eb0a4f00c343bbc32346e1217b86f3ce9dad"
 uuid = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
 version = "0.5.1"
 
-[[deps.CatIndices]]
-deps = ["CustomUnitRanges", "OffsetArrays"]
-git-tree-sha1 = "a0f80a09780eed9b1d106a1bf62041c2efc995bc"
-uuid = "aafaddc9-749c-510e-ac4f-586e18779b91"
-version = "0.2.2"
-
-[[deps.CategoricalArrays]]
-deps = ["DataAPI", "Future", "Missings", "Printf", "Requires", "Statistics", "Unicode"]
-git-tree-sha1 = "5084cc1a28976dd1642c9f337b28a3cb03e0f7d2"
-uuid = "324d7699-5711-5eae-9e2f-1d82baa6b597"
-version = "0.10.7"
-
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra", "SparseArrays"]
 git-tree-sha1 = "80ca332f6dcb2508adba68f22f551adb2d00a624"
@@ -141,12 +1211,6 @@ deps = ["ChainRulesCore", "LinearAlgebra", "Test"]
 git-tree-sha1 = "38f7a08f19d8810338d4f5085211c7dfa5d5bdd8"
 uuid = "9e997f8a-9a97-42d5-a9f1-ce6bfc15e2c0"
 version = "0.1.4"
-
-[[deps.CodeTracking]]
-deps = ["InteractiveUtils", "UUIDs"]
-git-tree-sha1 = "6d4fa04343a7fc9f9cb9cff9558929f3d2752717"
-uuid = "da1fd8a2-8d9e-5ec2-8556-3022fb5608a2"
-version = "1.0.9"
 
 [[deps.CodecBzip2]]
 deps = ["Bzip2_jll", "Libdl", "TranscodingStreams"]
@@ -202,16 +1266,6 @@ git-tree-sha1 = "417b0ed7b8b838aa6ca0a87aadf1bb9eb111ce40"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.12.8"
 
-[[deps.Combinatorics]]
-git-tree-sha1 = "08c8b6831dc00bfea825826be0bc8336fc369860"
-uuid = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
-version = "1.0.2"
-
-[[deps.CommonSolve]]
-git-tree-sha1 = "332a332c97c7071600984b3c31d9067e1a4e6e25"
-uuid = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
-version = "0.2.1"
-
 [[deps.CommonSubexpressions]]
 deps = ["MacroTools", "Test"]
 git-tree-sha1 = "7b8a93dba8af7e3b42fecabf646260105ac373f7"
@@ -228,23 +1282,6 @@ version = "3.45.0"
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 
-[[deps.ComputationalResources]]
-git-tree-sha1 = "52cb3ec90e8a8bea0e62e275ba577ad0f74821f7"
-uuid = "ed09eef8-17a6-5b46-8889-db040fac31e3"
-version = "0.3.2"
-
-[[deps.Conda]]
-deps = ["Downloads", "JSON", "VersionParsing"]
-git-tree-sha1 = "6e47d11ea2776bc5627421d59cdcc1296c058071"
-uuid = "8f4d0f93-b110-5947-807f-2305c1781a2d"
-version = "1.7.0"
-
-[[deps.ConstructionBase]]
-deps = ["LinearAlgebra"]
-git-tree-sha1 = "59d00b3139a9de4eb961057eabb65ac6522be954"
-uuid = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
-version = "1.4.0"
-
 [[deps.Contour]]
 git-tree-sha1 = "d05d9e7b7aedff4e5b51a029dced05cfb6125781"
 uuid = "d38c429a-6771-53c6-b99e-75d170b6e991"
@@ -254,11 +1291,6 @@ version = "0.6.2"
 git-tree-sha1 = "249fe38abf76d48563e2f4556bebd215aa317e15"
 uuid = "a8cc5b0e-0ffa-5ad4-8c14-923d3ee1735f"
 version = "4.1.1"
-
-[[deps.CustomUnitRanges]]
-git-tree-sha1 = "1a3f97f907e6dd8983b744d2642651bb162a3f7a"
-uuid = "dc8bdbbb-1ca9-579f-8c36-e416f6a65cce"
-version = "1.0.2"
 
 [[deps.DSP]]
 deps = ["Compat", "FFTW", "IterTools", "LinearAlgebra", "Polynomials", "Random", "Reexport", "SpecialFunctions", "Statistics"]
@@ -326,19 +1358,13 @@ version = "0.25.66"
 
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
-git-tree-sha1 = "b19534d1895d702889b219c382a6e18010797f0b"
+git-tree-sha1 = "c5544d8abb854e306b7b2f799ab31cdba527ccae"
 uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
-version = "0.8.6"
+version = "0.9.0"
 
 [[deps.Downloads]]
 deps = ["ArgTools", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
-
-[[deps.DrWatson]]
-deps = ["Dates", "FileIO", "JLD2", "LibGit2", "MacroTools", "Pkg", "Random", "Requires", "Scratch", "UnPack"]
-git-tree-sha1 = "67e9001646db6e45006643bf37716ecd831d37d2"
-uuid = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
-version = "2.9.1"
 
 [[deps.DualNumbers]]
 deps = ["Calculus", "NaNMath", "SpecialFunctions"]
@@ -351,12 +1377,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "3f3a2501fa7236e9b911e0f7a588c657e822bb6d"
 uuid = "5ae413db-bbd1-5e63-b57d-d24a61df00f5"
 version = "2.2.3+0"
-
-[[deps.Effects]]
-deps = ["Combinatorics", "DataFrames", "Distributions", "ForwardDiff", "LinearAlgebra", "Statistics", "StatsBase", "StatsModels", "Tables"]
-git-tree-sha1 = "bda113117badf27eae01aa7fb8e7075dc69d240d"
-uuid = "8f03c58b-bd97-4933-a826-f71b64d2cca2"
-version = "0.1.7"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -376,16 +1396,10 @@ uuid = "c87230d0-a227-11e9-1b43-d7ebe4e7570a"
 version = "0.4.1"
 
 [[deps.FFMPEG_jll]]
-deps = ["Artifacts", "Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "JLLWrappers", "LAME_jll", "Libdl", "Ogg_jll", "OpenSSL_jll", "Opus_jll", "PCRE2_jll", "Pkg", "Zlib_jll", "libaom_jll", "libass_jll", "libfdk_aac_jll", "libvorbis_jll", "x264_jll", "x265_jll"]
-git-tree-sha1 = "74faea50c1d007c85837327f6775bea60b5492dd"
+deps = ["Artifacts", "Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "JLLWrappers", "LAME_jll", "Libdl", "Ogg_jll", "OpenSSL_jll", "Opus_jll", "Pkg", "Zlib_jll", "libaom_jll", "libass_jll", "libfdk_aac_jll", "libvorbis_jll", "x264_jll", "x265_jll"]
+git-tree-sha1 = "ccd479984c7838684b3ac204b716c89955c76623"
 uuid = "b22a6f82-2f65-5046-a5b2-351ab43fb4e5"
-version = "4.4.2+2"
-
-[[deps.FFTViews]]
-deps = ["CustomUnitRanges", "FFTW"]
-git-tree-sha1 = "cbdf14d1e8c7c8aacbe8b19862e0179fd08321c2"
-uuid = "4f61f5a4-77b1-5117-aa51-3ab5ef4ef0cd"
-version = "0.3.2"
+version = "4.4.2+0"
 
 [[deps.FFTW]]
 deps = ["AbstractFFTs", "FFTW_jll", "LinearAlgebra", "MKL_jll", "Preferences", "Reexport"]
@@ -405,20 +1419,11 @@ git-tree-sha1 = "9267e5f50b0e12fdfd5a2455534345c4cf2c7f7a"
 uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 version = "1.14.0"
 
-[[deps.FileWatching]]
-uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
-
 [[deps.FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
 git-tree-sha1 = "246621d23d1f43e3b9c368bf3b72b2331a27c286"
 uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
 version = "0.13.2"
-
-[[deps.FiniteDifferences]]
-deps = ["ChainRulesCore", "LinearAlgebra", "Printf", "Random", "Richardson", "SparseArrays", "StaticArrays"]
-git-tree-sha1 = "0ee1275eb003b6fc7325cb14301665d1072abda1"
-uuid = "26cc04aa-876d-5657-8c51-4c34ba976000"
-version = "0.12.24"
 
 [[deps.FixedPointNumbers]]
 deps = ["Statistics"]
@@ -472,29 +1477,11 @@ version = "1.0.10+0"
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
-[[deps.GLFW]]
-deps = ["GLFW_jll"]
-git-tree-sha1 = "35dbc482f0967d8dceaa7ce007d16f9064072166"
-uuid = "f7f18e0c-5ee9-5ccd-a5bf-e8befd85ed98"
-version = "3.4.1"
-
-[[deps.GLFW_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pkg", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll"]
-git-tree-sha1 = "51d2dfe8e590fbd74e7a842cf6d13d8a2f45dc01"
-uuid = "0656b61e-2033-5cc2-a64a-77c0f6c09b89"
-version = "3.3.6+0"
-
 [[deps.GLM]]
 deps = ["Distributions", "LinearAlgebra", "Printf", "Reexport", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns", "StatsModels"]
 git-tree-sha1 = "039118892476c2bf045a43b88fcb75ed566000ff"
 uuid = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
 version = "1.8.0"
-
-[[deps.GLMakie]]
-deps = ["ColorTypes", "Colors", "FileIO", "FixedPointNumbers", "FreeTypeAbstraction", "GLFW", "GeometryBasics", "LinearAlgebra", "Makie", "Markdown", "MeshIO", "ModernGL", "Observables", "Printf", "Serialization", "ShaderAbstractions", "StaticArrays"]
-git-tree-sha1 = "f851a36de76664c20c2f58e92bbb39c68ce3d583"
-uuid = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
-version = "0.6.12"
 
 [[deps.GeometryBasics]]
 deps = ["EarCut_jll", "IterTools", "LinearAlgebra", "StaticArrays", "StructArrays", "Tables"]
@@ -549,34 +1536,29 @@ git-tree-sha1 = "709d864e3ed6e3545230601f94e11ebc65994641"
 uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 version = "0.3.11"
 
-[[deps.HypothesisTests]]
-deps = ["Combinatorics", "Distributions", "LinearAlgebra", "Random", "Rmath", "Roots", "Statistics", "StatsBase"]
-git-tree-sha1 = "10b23fc711999d34f6888ab6df4c510def193fd9"
-uuid = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
-version = "0.10.10"
+[[deps.Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.4"
 
-[[deps.IfElse]]
-git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
-uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
-version = "0.1.1"
+[[deps.HypertextLiteral]]
+deps = ["Tricks"]
+git-tree-sha1 = "c47c5fa4c5308f27ccaac35504858d8914e102f9"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.4"
 
-[[deps.ImageBase]]
-deps = ["ImageCore", "Reexport"]
-git-tree-sha1 = "b51bb8cae22c66d0f6357e3bcb6363145ef20835"
-uuid = "c817782e-172a-44cc-b673-b171935fbb9e"
-version = "0.1.5"
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.2"
 
 [[deps.ImageCore]]
 deps = ["AbstractFFTs", "ColorVectorSpace", "Colors", "FixedPointNumbers", "Graphics", "MappedArrays", "MosaicViews", "OffsetArrays", "PaddedViews", "Reexport"]
 git-tree-sha1 = "acf614720ef026d38400b3817614c45882d75500"
 uuid = "a09fc81d-aa75-5fe9-8630-4744c3626534"
 version = "0.9.4"
-
-[[deps.ImageFiltering]]
-deps = ["CatIndices", "ComputationalResources", "DataStructures", "FFTViews", "FFTW", "ImageBase", "ImageCore", "LinearAlgebra", "OffsetArrays", "Reexport", "SparseArrays", "StaticArrays", "Statistics", "TiledIteration"]
-git-tree-sha1 = "8b251ec0582187eff1ee5c0220501ef30a59d2f7"
-uuid = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
-version = "0.7.2"
 
 [[deps.ImageIO]]
 deps = ["FileIO", "IndirectArrays", "JpegTurbo", "LazyModules", "Netpbm", "OpenEXR", "PNGFiles", "QOI", "Sixel", "TiffImages", "UUIDs"]
@@ -589,12 +1571,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "87f7662e03a649cffa2e05bf19c303e168732d3e"
 uuid = "905a6f67-0a94-5f89-b386-d35d92009cd1"
 version = "3.1.2+0"
-
-[[deps.IncompleteLU]]
-deps = ["LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "a22b92ffedeb499383720dfedcd473deb9608b62"
-uuid = "40713840-3770-5561-ab4c-a76e7d0d7895"
-version = "0.2.0"
 
 [[deps.IndirectArrays]]
 git-tree-sha1 = "012e604e1c7458645cb8b436f8fba789a51b257f"
@@ -661,22 +1637,10 @@ git-tree-sha1 = "fa6287a4469f5e048d763df38279ee729fbd44e5"
 uuid = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 version = "1.4.0"
 
-[[deps.IterativeSolvers]]
-deps = ["LinearAlgebra", "Printf", "Random", "RecipesBase", "SparseArrays"]
-git-tree-sha1 = "1169632f425f79429f245113b775a0e3d121457c"
-uuid = "42fd0dbc-a981-5370-80f2-aaf504508153"
-version = "0.9.2"
-
 [[deps.IteratorInterfaceExtensions]]
 git-tree-sha1 = "a3f24677c21f5bbe9d2a714f95dcd58337fb2856"
 uuid = "82899510-4779-5014-852e-03e436cf321d"
 version = "1.0.0"
-
-[[deps.JLD2]]
-deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "Pkg", "Printf", "Reexport", "TranscodingStreams", "UUIDs"]
-git-tree-sha1 = "81b9477b49402b47fbe7f7ae0b252077f53e4a08"
-uuid = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-version = "0.4.22"
 
 [[deps.JLLWrappers]]
 deps = ["Preferences"]
@@ -707,12 +1671,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "b53380851c6e6664204efb2e62cd24fa5c47e4ba"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
 version = "2.1.2+0"
-
-[[deps.JuliaInterpreter]]
-deps = ["CodeTracking", "InteractiveUtils", "Random", "UUIDs"]
-git-tree-sha1 = "1101d9e5a062963612e8d2bd5bd653d73ae033f4"
-uuid = "aa1ae85d-cabe-5617-a682-6adf51b2e16a"
-version = "0.9.14"
 
 [[deps.KernelDensity]]
 deps = ["Distributions", "DocStringExtensions", "FFTW", "Interpolations", "StatsBase"]
@@ -746,12 +1704,6 @@ git-tree-sha1 = "a560dd966b386ac9ae60bdd3a3d3a326062d3c3e"
 uuid = "8cdb02fc-e678-4876-92c5-9defec4f444e"
 version = "0.3.1"
 
-[[deps.LeftChildRightSiblingTrees]]
-deps = ["AbstractTrees"]
-git-tree-sha1 = "fb6803dafae4a5d62ea5cab204b1e657d9737e7f"
-uuid = "1d6d02ad-be62-4b6b-8a6d-2f90e265016e"
-version = "0.2.0"
-
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
@@ -782,12 +1734,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgpg_error_jll", "Pkg"]
 git-tree-sha1 = "64613c82a59c120435c067c2b809fc61cf5166ae"
 uuid = "d4300ac3-e22c-5743-9152-c294e39db1e4"
 version = "1.8.7+0"
-
-[[deps.Libglvnd_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll", "Xorg_libXext_jll"]
-git-tree-sha1 = "7739f837d6447403596a75d19ed01fd08d6f56bf"
-uuid = "7e76a0d4-f3c7-5321-8279-8d96eeed0f29"
-version = "1.3.0+3"
 
 [[deps.Libgpg_error_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -826,12 +1772,6 @@ version = "0.3.16"
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
-[[deps.LoweredCodeUtils]]
-deps = ["JuliaInterpreter"]
-git-tree-sha1 = "dedbebe234e06e1ddad435f5c6f4b85cd8ce55f7"
-uuid = "6f1432cf-f94c-5a45-995e-cdbf5db27b0b"
-version = "2.2.2"
-
 [[deps.Lz4_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "5d494bc6e85c4c9b626ee0cab05daa4085486ab1"
@@ -843,12 +1783,6 @@ deps = ["Artifacts", "IntelOpenMP_jll", "JLLWrappers", "LazyArtifacts", "Libdl",
 git-tree-sha1 = "e595b205efd49508358f7dc670a940c790204629"
 uuid = "856f044c-d86e-5d09-b602-aeab76dc8ba7"
 version = "2022.0.0+0"
-
-[[deps.MLBase]]
-deps = ["IterTools", "Random", "Reexport", "StatsBase"]
-git-tree-sha1 = "3bd9fd4baf19dfc1edf344bc578da7f565da2e18"
-uuid = "f0e99cf1-93fa-52ec-9ecc-5026115318e0"
-version = "0.9.0"
 
 [[deps.MacroTools]]
 deps = ["Markdown", "Random"]
@@ -904,18 +1838,6 @@ version = "0.4.3"
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
 
-[[deps.MeshIO]]
-deps = ["ColorTypes", "FileIO", "GeometryBasics", "Printf"]
-git-tree-sha1 = "8be09d84a2d597c7c0c34d7d604c039c9763e48c"
-uuid = "7269a6da-0436-5bbc-96c2-40638cbb6118"
-version = "0.4.10"
-
-[[deps.MetaArrays]]
-deps = ["Requires"]
-git-tree-sha1 = "6647f7d45a9153162d6561957405c12088caf537"
-uuid = "36b8f3f0-b776-11e8-061f-1f20094e1fc8"
-version = "0.2.10"
-
 [[deps.Missings]]
 deps = ["DataAPI"]
 git-tree-sha1 = "bf210ce90b6c9eed32d25dbcae1ebc565df2687f"
@@ -927,12 +1849,6 @@ deps = ["Arrow", "DataAPI", "Distributions", "GLM", "JSON3", "LazyArtifacts", "L
 git-tree-sha1 = "4bf075b72b3a81254726ec4ce314648277e24623"
 uuid = "ff71e718-51f3-5ec2-a782-8ffcbfa3c316"
 version = "4.6.4"
-
-[[deps.MixedModelsPermutations]]
-deps = ["BlockDiagonals", "LinearAlgebra", "MixedModels", "Random", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "StatsModels", "Tables"]
-git-tree-sha1 = "a08c290a3b4770866c25c732aad6b38d196a041e"
-uuid = "647c4018-d7ef-4d03-a0cc-8889a722319e"
-version = "0.1.4"
 
 [[deps.MixedModelsSim]]
 deps = ["LinearAlgebra", "MixedModels", "PooledArrays", "PrettyTables", "Random", "Statistics", "Tables"]
@@ -948,12 +1864,6 @@ deps = ["Compat", "ExprTools"]
 git-tree-sha1 = "29714d0a7a8083bba8427a4fbfb00a540c681ce7"
 uuid = "78c3b35d-d492-501b-9361-3d52fe80e533"
 version = "0.7.3"
-
-[[deps.ModernGL]]
-deps = ["Libdl"]
-git-tree-sha1 = "344f8896e55541e30d5ccffcbf747c98ad57ca47"
-uuid = "66fc600b-dfda-50eb-8b99-91cfa97b1301"
-version = "1.1.4"
 
 [[deps.MosaicViews]]
 deps = ["MappedArrays", "OffsetArrays", "PaddedViews", "StackViews"]
@@ -1057,10 +1967,6 @@ git-tree-sha1 = "85f8e6578bf1f9ee0d11e7bb1b1456435479d47c"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 version = "1.4.1"
 
-[[deps.PCRE2_jll]]
-deps = ["Artifacts", "Libdl"]
-uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
-
 [[deps.PCRE_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "b2a7af664e098055a7529ad1a900ded962bca488"
@@ -1091,11 +1997,11 @@ git-tree-sha1 = "03a7a85b76381a3d04c7a1656039197e70eda03d"
 uuid = "5432bcbf-9aad-5242-b902-cca2824c8663"
 version = "0.5.11"
 
-[[deps.Parameters]]
-deps = ["OrderedCollections", "UnPack"]
-git-tree-sha1 = "34c0e9ad262e5f7fc75b10a9952ca7692cfc5fbe"
-uuid = "d96e819e-fc66-5662-9728-84c9c7592b0a"
-version = "0.12.3"
+[[deps.Pango_jll]]
+deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl", "Pkg"]
+git-tree-sha1 = "3a121dfbba67c94a5bec9dde613c3d0cbcf3a12b"
+uuid = "36c8627f-9965-5494-a995-c6b170f724f3"
+version = "1.50.3+0"
 
 [[deps.Parsers]]
 deps = ["Dates"]
@@ -1113,12 +2019,6 @@ version = "0.40.1+0"
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
-[[deps.PkgBenchmark]]
-deps = ["BenchmarkTools", "Dates", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Pkg", "Printf", "TerminalLoggers", "UUIDs"]
-git-tree-sha1 = "e4a10b7cdb7ec836850e43a4cee196f4e7b02756"
-uuid = "32113eaa-f34f-5b0d-bd6c-c81e245fc73d"
-version = "0.2.12"
-
 [[deps.PkgVersion]]
 deps = ["Pkg"]
 git-tree-sha1 = "a7a7e1a88853564e551e4eba8650f8c38df79b37"
@@ -1130,6 +2030,12 @@ deps = ["ColorSchemes", "Colors", "Dates", "Printf", "Random", "Reexport", "Stat
 git-tree-sha1 = "9888e59493658e476d3073f1ce24348bdc086660"
 uuid = "995b91a9-d308-5afd-9ec6-746e21dbc043"
 version = "1.3.0"
+
+[[deps.PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
+git-tree-sha1 = "8d1f54886b9037091edf146b517989fc4a09efec"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.39"
 
 [[deps.PolygonOps]]
 git-tree-sha1 = "77b3d3605fc1cd0b42d95eba87dfcd2bf67d5ff6"
@@ -1168,29 +2074,11 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 deps = ["Printf"]
 uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
 
-[[deps.ProgressLogging]]
-deps = ["Logging", "SHA", "UUIDs"]
-git-tree-sha1 = "80d919dee55b9c50e8d9e2da5eeafff3fe58b539"
-uuid = "33c8b6b6-d38a-422a-b730-caa89a2f386c"
-version = "0.1.4"
-
 [[deps.ProgressMeter]]
 deps = ["Distributed", "Printf"]
 git-tree-sha1 = "d7a7aef8f8f2d537104f170139553b14dfe39fe9"
 uuid = "92933f4c-e287-5a05-a399-4b506db050ca"
 version = "1.7.2"
-
-[[deps.PyCall]]
-deps = ["Conda", "Dates", "Libdl", "LinearAlgebra", "MacroTools", "Serialization", "VersionParsing"]
-git-tree-sha1 = "53b8b07b721b77144a0fbbbc2675222ebf40a02d"
-uuid = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
-version = "1.94.1"
-
-[[deps.PyMNE]]
-deps = ["PyCall"]
-git-tree-sha1 = "b3caa6ea95490974465487d54fc1e62a094bad8e"
-uuid = "6c5003b2-cbe8-491c-a0d1-70088e6a0fd6"
-version = "0.1.2"
 
 [[deps.QOI]]
 deps = ["ColorTypes", "FileIO", "FixedPointNumbers"]
@@ -1240,18 +2128,6 @@ git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.3.0"
 
-[[deps.Revise]]
-deps = ["CodeTracking", "Distributed", "FileWatching", "JuliaInterpreter", "LibGit2", "LoweredCodeUtils", "OrderedCollections", "Pkg", "REPL", "Requires", "UUIDs", "Unicode"]
-git-tree-sha1 = "c73149ff75d4efb19b6d77411d293ae8fb55c58e"
-uuid = "295af30f-e4ad-537b-8983-00126c2a3abe"
-version = "3.3.4"
-
-[[deps.Richardson]]
-deps = ["LinearAlgebra"]
-git-tree-sha1 = "e03ca566bec93f8a3aeb059c8ef102f268a38949"
-uuid = "708f8203-808e-40c0-ba2d-98a6953ed40d"
-version = "1.4.0"
-
 [[deps.Rmath]]
 deps = ["Random", "Rmath_jll"]
 git-tree-sha1 = "bf3188feca147ce108c76ad82c2792c57abe7b1f"
@@ -1263,12 +2139,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "68db32dff12bb6127bac73c209881191bf0efbb7"
 uuid = "f50d1b31-88e8-58de-be2c-1cc44531875f"
 version = "0.3.0+0"
-
-[[deps.Roots]]
-deps = ["ChainRulesCore", "CommonSolve", "Printf", "Setfield"]
-git-tree-sha1 = "422c880f74967af5a8db5702c6df9a03b465202e"
-uuid = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
-version = "2.0.7"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
@@ -1299,18 +2169,6 @@ version = "1.3.13"
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
-[[deps.Setfield]]
-deps = ["ConstructionBase", "Future", "MacroTools", "StaticArraysCore"]
-git-tree-sha1 = "e2cc6d8c88613c05e1defb55170bf5ff211fbeac"
-uuid = "efcf1570-3423-57d1-acb7-fd33fddbac46"
-version = "1.1.1"
-
-[[deps.ShaderAbstractions]]
-deps = ["ColorTypes", "FixedPointNumbers", "GeometryBasics", "LinearAlgebra", "Observables", "StaticArrays", "StructArrays", "Tables"]
-git-tree-sha1 = "6b5bba824b515ec026064d1e7f5d61432e954b71"
-uuid = "65257c39-d410-5151-9873-9b3e5be5013e"
-version = "0.2.9"
-
 [[deps.SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
 uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
@@ -1325,18 +2183,6 @@ deps = ["Dates", "Grisu"]
 git-tree-sha1 = "91eddf657aca81df9ae6ceb20b959ae5653ad1de"
 uuid = "992d4aef-0814-514b-bc4d-f2e9a6c4116f"
 version = "1.0.3"
-
-[[deps.SignalAnalysis]]
-deps = ["DSP", "Distributions", "DocStringExtensions", "FFTW", "LinearAlgebra", "MetaArrays", "PaddedViews", "Random", "Requires", "SignalBase", "Statistics", "WAV"]
-git-tree-sha1 = "da5e232a8fe1f08d047f3d1614ad9a25e439a390"
-uuid = "df1fea92-c066-49dd-8b36-eace3378ea47"
-version = "0.4.1"
-
-[[deps.SignalBase]]
-deps = ["Unitful"]
-git-tree-sha1 = "14cb05cba5cc89d15e6098e7bb41dcef2606a10a"
-uuid = "00c44e92-20f5-44bc-8f45-a1dcef76ba38"
-version = "0.1.2"
 
 [[deps.SignedDistanceFields]]
 deps = ["Random", "Statistics", "Test"]
@@ -1375,12 +2221,6 @@ git-tree-sha1 = "46e589465204cd0c08b4bd97385e4fa79a0c770c"
 uuid = "cae243ae-269e-4f55-b966-ac2d0dc13c15"
 version = "0.1.1"
 
-[[deps.Static]]
-deps = ["IfElse"]
-git-tree-sha1 = "de4f0a4f049a4c87e4948c04acff37baf1be01a6"
-uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
-version = "0.7.7"
-
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "Random", "StaticArraysCore", "Statistics"]
 git-tree-sha1 = "23368a3313d12a2326ad0035f0db0c0966f438ef"
@@ -1404,9 +2244,9 @@ version = "1.4.0"
 
 [[deps.StatsBase]]
 deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "0005d75f43ff23688914536c5e9d5ac94f8077f7"
+git-tree-sha1 = "472d044a1c8df2b062b23f222573ad6837a615ba"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.33.20"
+version = "0.33.19"
 
 [[deps.StatsFuns]]
 deps = ["ChainRulesCore", "HypergeometricFunctions", "InverseFunctions", "IrrationalConstants", "LogExpFunctions", "Reexport", "Rmath", "SpecialFunctions"]
@@ -1462,12 +2302,6 @@ git-tree-sha1 = "1feb45f88d133a655e001435632f019a9a1bcdb6"
 uuid = "62fd8b95-f654-4bbd-a8a5-9c27f68ccd50"
 version = "0.1.1"
 
-[[deps.TerminalLoggers]]
-deps = ["LeftChildRightSiblingTrees", "Logging", "Markdown", "Printf", "ProgressLogging", "UUIDs"]
-git-tree-sha1 = "f53e34e784ae771eb9ccde4d72e578aa453d0554"
-uuid = "5d786b92-1e48-4d6f-9151-6b4477ca9bed"
-version = "0.1.6"
-
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
@@ -1478,23 +2312,11 @@ git-tree-sha1 = "fcf41697256f2b759de9380a7e8196d6516f0310"
 uuid = "731e570b-9d59-4bfa-96dc-6df516fadf69"
 version = "0.6.0"
 
-[[deps.TiledIteration]]
-deps = ["ArrayInterface", "OffsetArrays"]
-git-tree-sha1 = "5e02b75701f1905e55e44fc788bd13caedb5a6e3"
-uuid = "06e1c1a7-607b-532d-9fad-de7d9aa2abac"
-version = "0.4.1"
-
 [[deps.TimeZones]]
 deps = ["Dates", "Downloads", "InlineStrings", "LazyArtifacts", "Mocking", "Printf", "RecipesBase", "Scratch", "Unicode"]
 git-tree-sha1 = "d634a3641062c040fc8a7e2a3ea17661cc159688"
 uuid = "f269a46b-ccf7-5d73-abea-4c690281aa53"
 version = "1.9.0"
-
-[[deps.TimerOutputs]]
-deps = ["ExprTools", "Printf"]
-git-tree-sha1 = "9dfcb767e17b0849d6aaf85997c98a5aea292513"
-uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
-version = "0.5.21"
 
 [[deps.TranscodingStreams]]
 deps = ["Random", "Test"]
@@ -1502,26 +2324,14 @@ git-tree-sha1 = "216b95ea110b5972db65aa90f88d8d89dcb8851c"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
 version = "0.9.6"
 
+[[deps.Tricks]]
+git-tree-sha1 = "6bac775f2d42a611cdfcd1fb217ee719630c4175"
+uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
+version = "0.1.6"
+
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
-
-[[deps.UnPack]]
-git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
-uuid = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
-version = "1.0.2"
-
-[[deps.Unfold]]
-deps = ["BSplines", "CategoricalArrays", "DSP", "DataFrames", "Distributions", "DocStringExtensions", "Effects", "GLM", "IncompleteLU", "IterativeSolvers", "LinearAlgebra", "MLBase", "Missings", "MixedModels", "MixedModelsPermutations", "MixedModelsSim", "PkgBenchmark", "ProgressMeter", "PyMNE", "Random", "SparseArrays", "StaticArrays", "Statistics", "StatsBase", "StatsModels", "Tables", "Test", "TimerOutputs"]
-git-tree-sha1 = "6ed61fa9736d2f214231f28608b13bac2b4d6620"
-uuid = "181c99d8-e21b-4ff3-b70b-c233eddec679"
-version = "0.3.6"
-
-[[deps.UnfoldSim]]
-deps = ["DSP", "DataFrames", "ImageFiltering", "MixedModels", "MixedModelsSim", "Parameters", "Random", "SignalAnalysis", "StatsModels"]
-path = "/Users/luis/git/UnfoldSim.jl"
-uuid = "ed8ae6d2-84d3-44c6-ab46-0baf21700804"
-version = "0.1.0"
 
 [[deps.Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
@@ -1531,23 +2341,6 @@ deps = ["REPL"]
 git-tree-sha1 = "53915e50200959667e78a92a418594b428dffddf"
 uuid = "1cfade01-22cf-5700-b092-accc4b62d6e1"
 version = "0.4.1"
-
-[[deps.Unitful]]
-deps = ["ConstructionBase", "Dates", "LinearAlgebra", "Random"]
-git-tree-sha1 = "b649200e887a487468b71821e2644382699f1b0f"
-uuid = "1986cc42-f94f-5a68-af5c-568840ba703d"
-version = "1.11.0"
-
-[[deps.VersionParsing]]
-git-tree-sha1 = "58d6e80b4ee071f5efd07fda82cb9fbe17200868"
-uuid = "81def892-9a0e-5fdd-b105-ffc91e053289"
-version = "1.3.0"
-
-[[deps.WAV]]
-deps = ["Base64", "FileIO", "Libdl", "Logging"]
-git-tree-sha1 = "7e7e1b4686995aaf4ecaaf52f6cd824fa6bd6aa5"
-uuid = "8149f6b0-98f6-5db9-b78f-408fbbb8ef88"
-version = "1.2.0"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -1579,12 +2372,6 @@ git-tree-sha1 = "4e490d5c960c314f33885790ed410ff3a94ce67e"
 uuid = "0c0b7dd1-d40b-584c-a123-a41640f87eec"
 version = "1.0.9+4"
 
-[[deps.Xorg_libXcursor_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXfixes_jll", "Xorg_libXrender_jll"]
-git-tree-sha1 = "12e0eb3bc634fa2080c1c37fccf56f7c22989afd"
-uuid = "935fb764-8cf2-53bf-bb30-45bb1f8bf724"
-version = "1.2.0+4"
-
 [[deps.Xorg_libXdmcp_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "4fe47bd2247248125c428978740e18a681372dd4"
@@ -1596,30 +2383,6 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll"]
 git-tree-sha1 = "b7c0aa8c376b31e4852b360222848637f481f8c3"
 uuid = "1082639a-0dae-5f34-9b06-72781eeb8cb3"
 version = "1.3.4+4"
-
-[[deps.Xorg_libXfixes_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll"]
-git-tree-sha1 = "0e0dc7431e7a0587559f9294aeec269471c991a4"
-uuid = "d091e8ba-531a-589c-9de9-94069b037ed8"
-version = "5.0.3+4"
-
-[[deps.Xorg_libXi_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXext_jll", "Xorg_libXfixes_jll"]
-git-tree-sha1 = "89b52bc2160aadc84d707093930ef0bffa641246"
-uuid = "a51aa0fd-4e3c-5386-b890-e753decda492"
-version = "1.7.10+4"
-
-[[deps.Xorg_libXinerama_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXext_jll"]
-git-tree-sha1 = "26be8b1c342929259317d8b9f7b53bf2bb73b123"
-uuid = "d1454406-59df-5ea1-beac-c340f2130bc3"
-version = "1.1.4+4"
-
-[[deps.Xorg_libXrandr_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll"]
-git-tree-sha1 = "34cea83cb726fb58f325887bf0612c6b3fb17631"
-uuid = "ec84b674-ba8e-5d96-8ba1-2a689ba10484"
-version = "1.5.2+4"
 
 [[deps.Xorg_libXrender_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll"]
@@ -1720,3 +2483,44 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "ee567a171cce03570d77ad3a43e90218e38937a9"
 uuid = "dfaa095f-4041-5dcd-9319-2fabd8486b76"
 version = "3.5.0+0"
+"""
+
+# ╔═╡ Cell order:
+# ╠═d4997eeb-7b84-4170-8410-f02e087cfe74
+# ╟─a843de36-a1fc-4a60-8c3c-4e039866afdb
+# ╠═7ddaa28d-5ceb-4f6b-b1c5-bc10fb597d0b
+# ╟─c4e2b79b-bb0f-4c8a-9137-25c4429c42b5
+# ╠═9bf01202-aa40-443c-925f-8106d9b09627
+# ╟─adb8e831-f369-47f3-8b93-2d1e285e408a
+# ╠═0f40a070-c0fe-4ee9-96e1-9af9ab1c6c5c
+# ╠═25dd3564-4905-427f-8b3a-4a5a30e078d8
+# ╠═ab909622-6ab8-4676-8076-8377665305fa
+# ╟─7f26939f-42ad-4d89-af24-2def85ac66ea
+# ╟─5da1e602-a5e5-4eff-a20d-b13728461ab9
+# ╟─248e912f-7f61-4ea2-a5f4-042412693a2c
+# ╟─bf95ae76-62a6-484e-b8bc-4ce9a10eb934
+# ╟─44a2bb3a-cd43-4c3b-9010-149738b57c0e
+# ╟─9163ceda-080b-11ed-0685-7db1269a6055
+# ╟─6463f0e5-bb1d-405a-8308-e0dcf598451e
+# ╠═1020d52b-c831-4e1b-a3b8-eca2a20caa3a
+# ╟─0c60e8bc-18ec-4f5e-ba08-29c8bb0ab789
+# ╟─769f906d-0228-44bd-94b9-fcc3877d49db
+# ╟─c47c923b-84d1-4cb4-baa3-78cea04166de
+# ╟─020f45aa-23d1-4295-be18-7f124b9c3c4c
+# ╟─8212b071-c0e7-46d9-b24f-499b179bdfc0
+# ╟─18052c8b-85b8-4004-8cd8-08c690a32888
+# ╟─bf4f9a09-2ace-49f4-902a-55fbfe13e64d
+# ╟─00d86269-7d4f-4338-88c4-a6ba935f41c3
+# ╟─f00825cf-9177-4cf5-81dc-093a4e1598b0
+# ╟─4a4d5a5d-44bc-4920-b4cd-2b5697d215b4
+# ╠═2e99350b-daa5-48e3-860e-35c9f47e6ff4
+# ╠═260346ce-fbd8-40a2-a033-a3c748d75e78
+# ╟─67d1ab74-7381-4e47-981e-f650ec31c69e
+# ╟─fcf73457-8d37-4977-bd20-e79406fd6635
+# ╟─d205af00-1435-4e32-a3be-b875c1000580
+# ╠═df49282c-1752-49c8-b738-e6da8be36009
+# ╠═dbd94ed9-bdc3-4e7c-91b8-46dfb362de95
+# ╠═004df210-cf67-496c-94b7-2112580c6228
+# ╟─a5a0dd17-fd37-417d-bc6e-d3df71f6b197
+# ╟─00000000-0000-0000-0000-000000000001
+# ╟─00000000-0000-0000-0000-000000000002

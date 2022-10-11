@@ -1,7 +1,23 @@
 name = "MSc_LMM_EEG"
+uuid = "2cb5423f-f3ae-43c2-9626-9d53c0ae97fd"
 authors = ["Luis Lips", "Judith Schepers", "Benedikt Ehinger"]
-[compat]
-julia = "1.7.2"
-DrWatson = "2.9.1"
+
 [deps]
+DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
+MixedModels = "ff71e718-51f3-5ec2-a782-8ffcbfa3c316"
+MixedModelsSim = "d5ae56c5-23ca-4a1f-b505-9fc4796fc1fe"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
+SignalAnalysis = "df1fea92-c066-49dd-8b36-eace3378ea47"
+StatsModels = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
+Unfold = "181c99d8-e21b-4ff3-b70b-c233eddec679"
+UnfoldSim = "ed8ae6d2-84d3-44c6-ab46-0baf21700804"
+
+[compat]
+DrWatson = "2.9.1"
+julia = "1.7.2"
