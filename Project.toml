@@ -3,10 +3,15 @@ uuid = "2cb5423f-f3ae-43c2-9626-9d53c0ae97fd"
 authors = ["Luis Lips", "Judith Schepers", "Benedikt Ehinger"]
 
 [deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+Hwloc = "0e44f5e4-bd66-52a0-8798-143a42290a1d"
 HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
 MixedModels = "ff71e718-51f3-5ec2-a782-8ffcbfa3c316"
 MixedModelsSim = "d5ae56c5-23ca-4a1f-b505-9fc4796fc1fe"
