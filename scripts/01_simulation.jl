@@ -1,14 +1,16 @@
 #!/usr/bin/env julia
 
-using Distributed#, SlurmClusterManager
+using Distributed #, SlurmClusterManager
+using InteractiveUtils
+
 #addprocs(SlurmManager(), exeflags="--project=test")
-addprocs(6)
+addprocs(30, exeflags="--project=.")
 
 @everywhere using DrWatson
 @everywhere using Dates
+@everywhere @quickactivate "MSc_LMM_EEG"
 
 @everywhere begin
-    @quickactivate "MSc_LMM_EEG"
     using Random
     using UnfoldSim
 
@@ -42,13 +44,13 @@ addprocs(6)
 
         # saving
         wsave(datadir("test", sname), sdata)
-        
+
         # logging
         time = Dates.format(now(UTC), dateformat"yyyy-mm-dd HH:MM:SS")
         info = "$(myid()):$(gethostname()) : "
         @info savename(info*time, d; connector=" | ", equals=" = ", sort=false, digits=2)
 
-        return params
+        return true
     end
 
     """
@@ -74,27 +76,25 @@ n_dicts = dict_list_count(cfg)
 
 # Simulate data
 @info "Simulating data... $(n_dicts)"
-res = pmap(simulate_data, dicts)
+res = @time pmap(simulate_data, dicts)
 
 # Removing workers
 rmprocs(workers())
 
-# check for missing
-dicts = [filter(k->k.first ∉ ["formula", "contrasts"], d) for d in dicts]
-res = [filter(k->k.first ∉ ["formula", "contrasts"], r) for r in res]
-missing = filter(!in(res), dicts)
+mis = findall(==(false), res)
 
-# result
-if isempty(missing)
+if isempty(mis)
     @info "Successfully simulated $(n_dicts) simulations!"
 else
-    @warn "$(length(missing)) simulations missing!"
-    for m in dicts
+    text = []
+    for i in mis
+        m = dicts[i]
         @unpack seed, nsubj, nitem, β, σranef, σres, noisetype, noiselevel = m
         d = @dict seed nsubj nitem β σranef σres noisetype noiselevel
         map!(x->replace(string(x), string(typeof(x)) => ""), values(d))
-        @warn savename(d; connector=" | ", equals=" = ", sort=false, digits=2)
+        push!(text, savename(d; connector=" | ", equals=" = ", sort=false, digits=2))
     end
+
+    @warn "$(length(mis)) simulations mis! \n" * join(text, "\n")
+
 end
-
-

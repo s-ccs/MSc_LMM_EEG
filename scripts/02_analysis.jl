@@ -1,14 +1,15 @@
 #!/usr/bin/env julia
 
 using Distributed#, SlurmClusterManager
+using ProgressMeter
 #addprocs(SlurmManager(), exeflags="--project=test")
-addprocs(6)
+addprocs(30, exeflags="--project=.")
 
 @everywhere using DrWatson
 @everywhere using Dates
+@everywhere @quickactivate "MSc_LMM_EEG"
 
 @everywhere begin
-    @quickactivate "MSc_LMM_EEG"
     using Random
     using Unfold
     using UnfoldSim
@@ -31,30 +32,33 @@ addprocs(6)
 
         # load simulation for parameters
         fname = savename(d, "jld2")
-        params = wload(datadir("simulation", fname))
-        @unpack data, evts = params
+        ldata = wload(datadir("simulation", fname))
+        @unpack data, evts = ldata
 
         # epoch data
-        τ = (-0.1, 1.2) #QUICKFIX 
-        sfreq = 256 #QUICKFIX 
+        τ = (-0.1, 1.2) #QUICKFIX
+        sfreq = 256 #QUICKFIX
         data_epoch, times = Unfold.epoch(data=data, tbl=evts, τ=τ, sfreq=sfreq)
+
+        # prepare saving
+        sdir = "test_epochs"
+        sname = savename(d, "jld2")
+        mkpath(datadir(sdir))
+        ks = ["data_epoch", "times", "evts"]
+        vs = [data_epoch, times, evts]
+        sdata = Dict(zip(ks, vs))
+
+        # saving
+        wsave(datadir(sdir, sname), sdata)
 
         # logging
         time = Dates.format(now(UTC), dateformat"yyyy-mm-dd HH:MM:SS")
-        @info savename(time, d; connector=" | ", equals=" = ", sort=false, digits=2)
-
-        # add new values to dictionary params
-        ks = ["data_epoch", "times"]
-        vs = [data_epoch, times]
-        foreach(((k, v), ) -> params[k] = v, zip(ks, vs))
-
-        # saving
-        sname = savename(d, "jld2")
-        mkpath(datadir("epochs"))
-        wsave(datadir("epochs", sname), params)
+        info = "$(myid()):$(gethostname()) : "
+        #@info savename(info*time, d; connector=" | ", equals=" = ", sort=false, digits=2)
 
         return true
     end
+
 
     """
     Analysis two stage
@@ -69,8 +73,8 @@ addprocs(6)
 
         # load data_epochs, times, evts for parameters
         fname = savename(d, "jld2")
-        params = wload(datadir("epochs", fname))
-        @unpack data_epoch, times, evts = params
+        ldata = wload(datadir("epochs", fname))
+        @unpack data_epoch, times, evts = ldata
 
         # fit model
         model = "two-stage"
@@ -82,17 +86,17 @@ addprocs(6)
         map(Base.Iterators.partition(axes(data_epoch,3), nitem)) do cols
             push!(data_epoch_subjects, data_epoch[:, :, cols])
         end
-    
-        # fit model per subject 
+
+        # fit model per subject
         cond_temp = fit_unfold_model.((evts,), data_epoch_subjects, (times, ), subjects)
         condA = [row[1][1] for row in eachrow(cond_temp)]
         condB = [row[1][2] for row in eachrow(cond_temp)]
-    
+
         # ttest & pvalue
         condA = hcat(condA...)
         condB = hcat(condB...)
 
-        # extract peaks 
+        # extract peaks
         window = 70:110 #QUICKFIX (window + extract peaks)
         x = maximum.(eachcol(condA[window, :]))
         y = maximum.(eachcol(condB[window, :]))
@@ -100,19 +104,26 @@ addprocs(6)
         # ttest + pvalue
         p = pvalue(OneSampleTTest(x, y))
 
-        # logging
-        time = Dates.format(now(UTC), dateformat"yyyy-mm-dd HH:MM:SS")
-        @info savename(time, d; connector=" | ", equals=" = ", sort=false, digits=2)
+
+        # prepare saving
+        sdir = "analysis"
+        sname = savename(d, "jld2")
+        mkpath(datadir(sdir, model))
 
         # add new values to dictionary params
         ks = ["pvalue"]
         vs = [p]
         foreach(((k, v), ) -> params[k] = v, zip(ks, vs))
 
-        # saving
-        sname = savename(d, "jld2")
-        mkpath(datadir("analysis", model))
-        wsave(datadir("analysis", model, sname), params)
+        # saving (whole params dict!)
+        wsave(datadir(sdir, model, sname), params)
+
+        # logging
+        time = Dates.format(now(UTC), dateformat"yyyy-mm-dd HH:MM:SS")
+        info = "$(myid()):$(gethostname()) : "
+        #@info savename(info*time, d; connector=" | ", equals=" = ", sort=false, digits=2)
+
+        return true
     end
 
     """
@@ -131,7 +142,7 @@ addprocs(6)
         r[:seed] = "XXX" # placeholder
         rfname = replace(savename(r), "["=>"\\[", "]"=>"\\]", "("=>"\\(", ")"=>"\\)", " "=>"\\s")
         rfname = replace(rfname, "XXX"=>"([1-9][0-9]{0,2}|1000)")
-        
+
         # load results
         res = collect_results(datadir("analysis");white_list=["seed", "nsubj", "nitem", "pvalue"], subfolders = true, rinclude=[Regex(rfname)])
 
@@ -141,7 +152,7 @@ addprocs(6)
 
         # logging
         time = Dates.format(now(UTC), dateformat"yyyy-mm-dd HH:MM:SS")
-        @info savename(time, d; connector=" | ", equals=" = ", sort=false, digits=2)
+        #@info savename(time, d; connector=" | ", equals=" = ", sort=false, digits=2)
 
         # add new values to dictionary params
         ks = ["power"]
@@ -175,18 +186,22 @@ cfg = config(args["filename"])
 
 # Split config into list of parameter combinations
 dicts = dict_list(cfg)
+n_dicts = dict_list_count(cfg)
 
 # Epoch data
-@info "Epoching data..."
-#res = pmap(epoch_data, dicts)
+@info "Epoching data... $(n_dicts)"
+res = @showprogress pmap(epoch_data, dicts)
 
 # Analysis
 @info "Starting two-stage analysis..."
-#res = pmap(analysis_2stage, dicts)
+res = @showprogress pmap(analysis_2stage, dicts)
 
 # Compute power
 delete!(cfg, "seed")
 cfg["model"] = ["two-stage"]
 dicts = dict_list(cfg)
 @info "Computing power..."
-res = pmap(compute_power, dicts)
+res = @showprogress pmap(compute_power, dicts)
+
+# Removing workers
+rmprocs(workers())
