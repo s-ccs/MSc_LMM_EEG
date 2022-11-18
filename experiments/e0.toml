@@ -1,0 +1,8 @@
+seed = {start = 1, step = 1, end = 1000}
+nsubj = {start = 3, step = 1, end = 30}
+nitem = {start = 2, step = 2, end = 30}
+beta = [[2.0, 0.3]]
+sigmaranef = [{subj = [1.0, 0.0]}]
+sigmares = 0.0001
+noisetype = "white"
+noiselevel = 2.0
