@@ -13,6 +13,13 @@ addprocs(SlurmManager(), exeflags="--project=.")
 @everywhere using CairoMakie
 @everywhere using DataFrames
 
+dir =  (isassigned(ARGS, 2) ? ARGS[2] : "data")
+@everywhere dir = $(dir)
+
+@everywhere begin
+    datadir(args...) = projectdir(dir, args...)
+end
+
 @everywhere begin
     using Random
     using Unfold
@@ -21,6 +28,7 @@ addprocs(SlurmManager(), exeflags="--project=.")
     using Statistics
     using HypothesisTests
     using MixedModelsPermutations
+    
 
     """
     Simulate data and analyse data based on parameterization
@@ -67,6 +75,7 @@ addprocs(SlurmManager(), exeflags="--project=.")
         if lmm && !timeexpanded
             fm = @formula(dv ~ 1 + cond + (1 + cond | subject))
             fm1 = fit(MixedModel, fm, evts, progress=false)
+	    #fm1.optsum
 
 	    if quicklmm
 	        pvalue_lmm = fm1.pvalues[indexin(["cond: B"], fixefnames(fm1))[1]]
@@ -81,7 +90,7 @@ addprocs(SlurmManager(), exeflags="--project=.")
                     @warn e seed nsubj nitem β σranef σres noisetype noiselevel
                     missing
                 end
-	    end
+	        end
 
             # add to params
             params["pvalue_lmm"] = pvalue_lmm
@@ -94,13 +103,13 @@ addprocs(SlurmManager(), exeflags="--project=.")
         d = @dict seed nsubj nitem β σranef σres noisetype noiselevel
         map!(x->replace(string(x), string(typeof(x)) => ""), values(d))
 
-	d1 = @dict nsubj nitem β σranef σres noisetype noiselevel
+	    d1 = @dict nsubj nitem β σranef σres noisetype noiselevel
         map!(x->replace(string(x), string(typeof(x)) => ""), values(d1))
 
         # saving
         sdir = "pvalues"
         sname = savename(d, "jld2")
-	subdir = savename(d1)
+	    subdir = savename(d1)
         mkpath(datadir(sdir, subdir))
         wsave(datadir(sdir, subdir, sname), params)
 
@@ -127,7 +136,7 @@ addprocs(SlurmManager(), exeflags="--project=.")
         d = @dict nsubj nitem β σranef σres noisetype noiselevel
         map!(x->replace(string(x), string(typeof(x)) => ""), values(d))
 
-	d1 = @dict nsubj nitem β σranef σres noisetype noiselevel
+	    d1 = @dict nsubj nitem β σranef σres noisetype noiselevel
         map!(x->replace(string(x), string(typeof(x)) => ""), values(d1))
         subdir = savename(d1)
 
@@ -138,8 +147,8 @@ addprocs(SlurmManager(), exeflags="--project=.")
         #rfname = replace(rfname, "XXX"=>"([1-9][0-9]{0,2}|1000)")
 
         # load results
-	# res = collect_results(datadir("pvalues", subdir); black_list=["noiselevel", "noisetype", "nitem", "nsubj", "seed", "β", "σres", "σranef"], subfolders = false, rinclude=[Regex(rfname)], verbose=false)
-	res = collect_results(datadir("pvalues", subdir);subfolders = false)
+	    # res = collect_results(datadir("pvalues", subdir); black_list=["noiselevel", "noisetype", "nitem", "nsubj", "seed", "β", "σres", "σranef"], subfolders = false, rinclude=[Regex(rfname)], verbose=false)
+	    res = collect_results(datadir("pvalues", subdir);subfolders = false)
 															 
         # iterate over MixedModels
         for pvalue_model in intersect(["pvalue_twostage", "pvalue_lmm"], names(res))
@@ -150,7 +159,7 @@ addprocs(SlurmManager(), exeflags="--project=.")
             # add to params
             params[replace(pvalue_model, "pvalue"=>"power")] = power
 	    
-	    # filter params
+	        # filter params
             filter!(((k,v),) -> k in ["seed", "nsubj", "nitem", "β",  "σranef", "σres", "noisetype", "noiselevel", "power_twostage", "power_lmm"], params)
 
             # saving
@@ -173,109 +182,115 @@ addprocs(SlurmManager(), exeflags="--project=.")
     Plotting
     """
     function plot(res, model)
-	theme = Theme(fontsize = 30)
-	set_theme!(theme)
+		theme = Theme(fontsize = 30)
+		set_theme!(theme)
 
-	subjs = sort([Set(res.nsubj)...])
-	subjs_step = subjs[2] - subjs[1]
-	nsubj = minimum(subjs):subjs_step:maximum(subjs)
+		subjs = sort([Set(res.nsubj)...])
+		subjs_step = subjs[2] - subjs[1]
+		nsubj = minimum(subjs):subjs_step:maximum(subjs)
 
-	items = sort([Set(res.nitem)...])
-	items_step = items[2] - items[1]
-	nitem = minimum(items):items_step:maximum(items)
+		items = sort([Set(res.nitem)...])
+		items_step = items[2] - items[1]
+		nitem = minimum(items):items_step:maximum(items)
 
-	dxs = Int(minimum(nsubj) / step(nsubj))
-	dys = Int(minimum(nitem) / step(nitem))
-	m = zeros(length(nsubj)+dxs,  length(nitem)+dys)
+		dxs = Int(minimum(nsubj) / step(nsubj))
+		dys = Int(minimum(nitem) / step(nitem))
+		m = zeros(length(nsubj)+dxs,  length(nitem)+dys)
 
-	for i in 0:maximum(nsubj)
-		for j in 0:step(nitem):maximum(nitem)
-			r = filter(n -> n.nsubj==i && n.nitem ==j, res)[!, "power_"*model]
-			m[i+1,Int(j/2)+1] = (isempty(r) ? 0.0 : Base.convert.(Float64, r)[1])
+		for i in 0:maximum(nsubj)
+			for j in 0:step(nitem):maximum(nitem)
+				r = filter(n -> n.nsubj==i && n.nitem ==j, res)[!, "power_"*model]
+				m[i+1,Int(j/2)+1] = (isempty(r) ? 0.0 : Base.convert.(Float64, r)[1])
+			end
 		end
-	end
 
-	f = Figure(
-		backgroundcolor = :white,
-		resolution = (1000, 1000),
-		figure_padding = 20
-	)
+		# construct subtitle
+		d = copy(first(select(res, ["β", "σranef", "σres", "noisetype", "noiselevel"])))
+		d = Dict(pairs(d))
+		d[:σranef] = [last(first(d[:σranef]))[1,1], last(first(d[:σranef]))[2,2]]
+		map!(x->replace(string(x), string(typeof(x)) => ""), values(d))
+		@unpack β, σranef, σres, noisetype, noiselevel = d
+		s1 = savename(@dict β σranef σres; connector="   |   ", equals=" = ", sort=true, digits=5)
+		s2 = savename(@dict noisetype noiselevel model; connector="   |   ", equals=" = ", sort=true, digits=5)
 
-	# construct subtitle
-	d = copy(first(select(res, ["β", "σranef", "σres", "noisetype", "noiselevel"])))
-	d = Dict(pairs(d))
-	d[:σranef] = [last(first(d[:σranef]))[1,1], last(first(d[:σranef]))[2,2]]
-	map!(x->replace(string(x), string(typeof(x)) => ""), values(d))
-	@unpack β, σranef, σres, noisetype, noiselevel = d
-	s1 = savename(@dict β σranef σres; connector="   |   ", equals=" = ", sort=true, digits=5)
-	s2 = savename(@dict noisetype noiselevel model; connector="   |   ", equals=" = ", sort=true, digits=5)
+		subtitle = s1 * " \n " * s2
 
-	subtitle = s1 * " \n " * s2
+		f = Figure(
+		    backgroundcolor = :white,
+	   	    resolution = (1000, 1000),
+		    figure_padding = 20
+		)
+        
+		Axis(
+		    f[1, 1],
+		    title = "Power Contour",
+		    xlabel = "Number of Subjects",
+		    ylabel = "Number of Items",
+		    subtitle = subtitle,
+		    subtitlesize = 25.0f0,
+		    subtitlegap = 10,
+		    titlegap = 30,
+		    xautolimitmargin = (0.0, 0.0),
+		    xminorticksvisible = true,
+		    xminorticks = IntervalsBetween(5),
+		    xticks=0:5:maximum(subjs),
+		    xlabelpadding = 20,
+		    xlabelfont="TeX Gyre Heros Makie Bold",
 
-	Axis(
-		f[1, 1],
-		title = "Power Contour",
-		xlabel = "Number of Subjects",
-		ylabel = "Number of Items",
-		subtitle = subtitle,
-		subtitlesize = 25.0f0,
-		subtitlegap = 10,
-		titlegap = 30,
-		xautolimitmargin = (0.0, 0.0),
-		xminorticksvisible = true,
-		xminorticks = IntervalsBetween(5),
-		xticks=0:5:maximum(subjs),
-		xlabelpadding = 20,
-		xlabelfont="TeX Gyre Heros Makie Bold",
+		    yautolimitmargin = (0.0, 0.0),
+		    yminorticksvisible = true,
+		    yminorticks = IntervalsBetween(5),
+		    yticks=0:5:maximum(items),
+		    ylabelpadding = 20,
+		    ylabelfont="TeX Gyre Heros Makie Bold"
+	    )
 
-		yautolimitmargin = (0.0, 0.0),
-		yminorticksvisible = true,
-		yminorticks = IntervalsBetween(5),
-		yticks=0:5:maximum(items),
-		ylabelpadding = 20,
-		ylabelfont="TeX Gyre Heros Makie Bold"
-	)
 
-	xs = LinRange(0, maximum(nsubj), length(nsubj) + dxs)
-	ys = LinRange(0, maximum(nitem), length(nitem) + dys)
+		c = collect(reverse(cgrad(:Blues, 10)))[1:10];
+		c = [(ci,1) for ci in c]
 
-	zs = m
+		# helper code for legend
+		g = Figure(resolution = (800, 600))
+		Axis(g[1,1])
+		l = []
+		for i in 1:10
+		   lin = lines!(g[1,1], 1:10, rand(10), color=c[i][1], linewidth=(i==8 ? 5 : 2))
+		   push!(l, lin)
+		end
 
-	c = collect(reverse(cgrad(:Blues, 11)))[1:11];
+		xs = LinRange(0, maximum(nsubj), length(nsubj) + dxs)
+	        ys = LinRange(0, maximum(nitem), length(nitem) + dys)
+		zs = m
 
-	# helper code for legend
-	g = Figure(resolution = (800, 600))
-	Axis(g[1,1])
-	l = []
-	for i in 1:10
-		lin = lines!(g[1,1], 1:10, rand(10), color=c[i], linewidth=(i==8 ? 5 : 2))
-		push!(l, lin)
-	end
+		contour!(f[1,1], xs, ys, zs, 
+			levels=[10,20,30,40,50,60,70,80,90,99],
+			color=c,
+			linewidth = 2,
+			alpha=1,
+			transparency = true,
+		)
 
-	contour!(f[1,1], xs, ys, zs,
-		levels=10,
-		colormap=c,
-		linewidth = 2,
-		alpha=1,
-		transparency = true,
-	)
+		c2 = repeat([(c[8], 0)], 10)
+		c2[8] = (c[8], 1)
+		
+		contour!(f[1,1], xs, ys, zs, 
+			levels=[10,20,30,40,50,60,70,80,90,99],
+			color=c2,
+			linewidth = 8,
+			alpha=1,
+			transparency = true,
+		)
 
-	c2 = repeat([(c[8], 0)], 12)
-	c2[9] = (c[9], 1)
-	contour!(f[1,1], xs, ys, zs,
-		levels=10,
-		colormap=c2,
-		linewidth = 8,
-		alpha=1,
-		transparency = true,
-	)
+	    xs = LinRange(0, maximum(nsubj), length(nsubj) + dxs)
+	    ys = LinRange(0, maximum(nitem), length(nitem) + dys)
 
-	Legend(f[1, 2], l, " " .* string.((1:length(l)).*10).* " %", "Power")
+	   
+		Legend(f[1, 2], l, " " .* string.((1:length(l)).*10).* " %", "Power")
 
-	mkpath(datadir("plots", model))
-	fname = savename(d, "png"; connector="_", equals="=", sort=true, digits=5)
+		mkpath(datadir("plots", model))
+		fname = savename(d, "png"; connector="_", equals="=", sort=true, digits=5)
 
-	save(datadir("plots", model, fname), f)
+		save(datadir("plots", model, fname), f)
     end    
 
 
@@ -325,15 +340,15 @@ for filename in readdir(ARGS[1];join=true)
 	@info "Compute power... $(n_dicts)"
 	flush(stderr)
 	res = pmap(compute_power, dicts)
+end
 
-	@info "Plotting..."
-	flush(stderr)
-	# plot
-	for model in ["twostage", "lmm"]
-	    res = collect_results(datadir("power", model))
-	    gdf = groupby(res, [:β, :σranef, :σres, :noiselevel, :noisetype])
-	    pmap(x->plot(x, model), collect(gdf))
-	end
+@info "Plotting..."
+flush(stderr)
+# plot
+for model in ["twostage", "lmm"]
+    res = collect_results(datadir("power", model))
+    gdf = groupby(res, [:β, :σranef, :σres, :noiselevel, :noisetype])
+    pmap(x->plot(x, model), collect(gdf))
 end
 
 
