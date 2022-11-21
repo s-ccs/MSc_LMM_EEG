@@ -167,4 +167,4 @@ n_dicts = dict_list_count(cfg)
 # Simulate data & compute pvalues
 @info "Creating power matrices... $(n_dicts)"
 flush(stderr)
-pmap(run, parameter_list)
+pmap(run, dicts)
