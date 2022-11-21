@@ -158,7 +158,7 @@ end
 include("../src/config.jl")
 
 # Create config
-cfg = config(filename)
+cfg = config(ARGS[1])
 
 # Split config into list of parameter combinations
 dicts = dict_list(cfg)
