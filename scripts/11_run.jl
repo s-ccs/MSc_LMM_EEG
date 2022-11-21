@@ -136,6 +136,7 @@ end
 
             # save to csv
             sname = savename(d, "csv")
+            mkpath(datadir("power"))
             writedlm(datadir("power", sname),  P, ',')
         end
     end
