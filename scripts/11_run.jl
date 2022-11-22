@@ -236,7 +236,7 @@ end
             
             # compute power for specific combination
 	    P = @time "Create power matrix: " pmap(((nsubj, nitem),)->run_iteration(nsubj, nitem, seed, params, model), reverse([Iterators.product(nsubjs, nitems)...]))
-	    P = reshape(P, (length(nsubjs), length(nitems)))
+	    P = reshape(reverse(P), (length(nsubjs), length(nitems)))
 
             # prepare parameters for logging, loading and saving
             @unpack β, σranef, σres, noisetype, noiselevel = params
