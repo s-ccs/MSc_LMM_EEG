@@ -16,7 +16,7 @@ end
 @everywhere using DrWatson
 @everywhere using Dates
 @everywhere @quickactivate "MSc_LMM_EEG"
-@everywhere using MixedModels: @formula, fit, MixedModel, fixefnames
+@everywhere using MixedModels: @formula, fit, refit!, MixedModel, fixefnames
 @everywhere using CairoMakie
 @everywhere using DataFrames
 @everywhere begin
@@ -66,7 +66,7 @@ end
 
         elseif model=="lmm" && !timeexpanded
             fm = @formula(dv ~ 1 + cond + (1 + cond | subject))
-	    fm1 = MixedModels.MixedModel(fm, evts)
+	    fm1 = MixedModel(fm, evts)
 	    fm1.optsum.maxtime = 1
 	    refit!(fm1, progress=false)
 
@@ -134,7 +134,7 @@ end
         for model in models
             
             # compute power for specific combination
-	    P = @time "Create power matrix: " pmap(((nsubj, nitem),)->run_iteration(nsubj, nitem, seed, params, model), reverse([Iterators.product(nsubjs, nitems)...]), on_error=x->-1, retry_delays = zeros(3))
+	    P = @time "Create power matrix: " pmap(((nsubj, nitem),)->run_iteration(nsubj, nitem, seed, params, model), reverse([Iterators.product(nsubjs, nitems)...]))
 	    P = reshape(P, (length(nsubjs), length(nitems)))
 
             # prepare parameters for logging, loading and saving
