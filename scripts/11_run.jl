@@ -60,7 +60,9 @@ end
         m[dxs+1:end, dys+1:end] = P
 
         # construct subtitle
-        @unpack β, σranef, σres, noisetype, noiselevel = params
+	params["σranef"] = [last(first(params["σranef"]))[1,1], last(first(params["σranef"]))[2,2]]
+	map!(x->replace(string(x), string(typeof(x)) => ""), values(params))
+	@unpack β, σranef, σres, noisetype, noiselevel = params
         s1 = savename(@dict β σranef σres; connector="   |   ", equals=" = ", sort=true, digits=5)
         s2 = savename(@dict noisetype noiselevel model; connector="   |   ", equals=" = ", sort=true, digits=5)
         subtitle = s1 * " \n " * s2
