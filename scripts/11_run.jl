@@ -66,8 +66,9 @@ end
 
         elseif model=="lmm" && !timeexpanded
             fm = @formula(dv ~ 1 + cond + (1 + cond | subject))
-            fm1 = fit(MixedModel, fm, evts, progress=false)
-            #fm1.optsum
+	    fm1 = MixedModels.MixedModel(fm, evts)
+	    fm1.optsum.maxtime = 1
+	    refit!(fm1, progress=false)
 
             if quicklmm
                 pvalue = fm1.pvalues[indexin(["cond: B"], fixefnames(fm1))[1]]
@@ -116,6 +117,12 @@ end
     end
 
 
+    function run_iteration(nsubj, nitem, seed, params, model)
+	p = @time "$(myid()):$(gethostname()):  Computing... $nsubj, $nitem, $model" power(pvalue.(sim.(nsubj, nitem, seed, (params,)), model))
+	return p
+    end
+
+
     function run(params)
         # select outer loop iteration parameters
         seed = pop!(params, "seed")
@@ -124,11 +131,12 @@ end
         models = pop!(params, "models")
         
         # create and save power matrices
-        for nsubj in nsubjs, nitem in nitems, model in models
+        for model in models
             
             # compute power for specific combination
-            P = power(pvalue.(sim.(nsubj, nitem, seed, (params,)), model))
-            
+	    P = @time "Create power matrix: " pmap(((nsubj, nitem),)->run_iteration(nsubj, nitem, seed, params, model), reverse([Iterators.product(nsubjs, nitems)...]), on_error=x->-1, retry_delays = zeros(3))
+	    P = reshape(P, (length(nsubjs), length(nitems)))
+
             # prepare parameters for logging, loading and saving
             @unpack β, σranef, σres, noisetype, noiselevel = params
             d = @dict nsubjs nitems model β σranef σres noisetype noiselevel
@@ -137,7 +145,7 @@ end
             # save to csv
             sname = savename(d, "csv")
             mkpath(datadir("power"))
-            writedlm(datadir("power", sname),  P, ',')
+            @time "Saving:" writedlm(datadir("power", sname),  P, ',')
         end
     end
 
@@ -168,4 +176,8 @@ n_dicts = dict_list_count(cfg)
 # Simulate data & compute pvalues
 @info "Creating power matrices... $(n_dicts)"
 flush(stderr)
-pmap(run, dicts)
+#@time "All:" pmap(run, dicts)
+
+@time "All:" for p in dicts
+    run(p)
+end

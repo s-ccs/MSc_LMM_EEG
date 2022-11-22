@@ -21,14 +21,15 @@ function config(filename)
 
     config = Dict(
         # variable parameters
-        "seed" => isa(c["seed"], Dict) ? collect(parse_range(c["seed"])) : c["seed"],
-        "nsubj" => isa(c["nsubj"], Dict) ? collect(parse_range(c["nsubj"])) : c["nsubj"],
-        "nitem" => isa(c["nitem"], Dict) ? collect(parse_range(c["nitem"])) : c["nitem"],
+        "seed" => isa(c["seed"], Dict) ? parse_range(c["seed"]) : c["seed"],
+        "nsubj" => isa(c["nsubj"], Dict) ? parse_range(c["nsubj"]) : c["nsubj"],
+        "nitem" => isa(c["nitem"], Dict) ? parse_range(c["nitem"]) : c["nitem"],
         "β" => c["beta"],
         "σranef" => [Dict([(Symbol(k), create_re(v...)) for (k,v) in d]) for d in c["sigmaranef"]],
         "σres" => c["sigmares"],
         "noisetype" => parse_noisetype(c["noisetype"]),
         "noiselevel" => c["noiselevel"],
+	"models" => c["models"],
 
         # fixed parameters
         "subj_btwn" => nothing,
