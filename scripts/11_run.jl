@@ -46,10 +46,108 @@ end
 #############
 
 @everywhere begin
+    """
+    Create plot for given P and parameters
+    """
+    function plot(P, nsubj, nitem, params, model)
+        theme = Theme(fontsize = 30)
+        set_theme!(theme)
+
+        dxs = Int(minimum(nsubj) / step(nsubj))
+        dys = Int(minimum(nitem) / step(nitem))
+        m = zeros(length(nsubj)+dxs,  length(nitem)+dys)
+
+        m[dxs+1:end, dys+1:end] = P
+
+        # construct subtitle
+        @unpack β, σranef, σres, noisetype, noiselevel = params
+        s1 = savename(@dict β σranef σres; connector="   |   ", equals=" = ", sort=true, digits=5)
+        s2 = savename(@dict noisetype noiselevel model; connector="   |   ", equals=" = ", sort=true, digits=5)
+        subtitle = s1 * " \n " * s2
+
+        f = Figure(
+            backgroundcolor = :white,
+            resolution = (1000, 1000),
+            figure_padding = 20
+        )
+        
+        Axis(
+            f[1, 1],
+            title = "Power Contour",
+            xlabel = "Number of Subjects",
+            ylabel = "Number of Items",
+            subtitle = subtitle,
+            subtitlesize = 25.0f0,
+            subtitlegap = 10,
+            titlegap = 30,
+            xautolimitmargin = (0.0, 0.0),
+            xminorticksvisible = true,
+            xminorticks = IntervalsBetween(5),
+            xticks=0:5:maximum(nsubj),
+            xlabelpadding = 20,
+            xlabelfont="TeX Gyre Heros Makie Bold",
+
+            yautolimitmargin = (0.0, 0.0),
+            yminorticksvisible = true,
+            yminorticks = IntervalsBetween(5),
+            yticks=0:5:maximum(nitem),
+            ylabelpadding = 20,
+            ylabelfont="TeX Gyre Heros Makie Bold"
+        )
+
+        c = collect(reverse(cgrad(:Blues, 10)))[1:10];
+        c = [(ci,1) for ci in c]
+
+        # helper code for legend
+        g = Figure(resolution = (800, 600))
+        Axis(g[1,1])
+        l = []
+        for i in 1:10
+        lin = lines!(g[1,1], 1:10, rand(10), color=c[i][1], linewidth=(i==8 ? 5 : 2))
+        push!(l, lin)
+        end
+
+        xs = LinRange(0, maximum(nsubj), length(nsubj) + dxs)
+            ys = LinRange(0, maximum(nitem), length(nitem) + dys)
+        zs = m
+
+        contour!(f[1,1], xs, ys, zs, 
+            levels=[10,20,30,40,50,60,70,80,90,99],
+            color=c,
+            linewidth = 2,
+            alpha=1,
+            transparency = true,
+        )
+
+        c2 = repeat([(c[8], 0)], 10)
+        c2[8] = (c[8], 1)
+        
+        contour!(f[1,1], xs, ys, zs, 
+            levels=[10,20,30,40,50,60,70,80,90,99],
+            color=c2,
+            linewidth = 8,
+            alpha=1,
+            transparency = true,
+        )
+
+        xs = LinRange(0, maximum(nsubj), length(nsubj) + dxs)
+        ys = LinRange(0, maximum(nitem), length(nitem) + dys)
+    
+        Legend(f[1, 2], l, " " .* string.((1:length(l)).*10).* " %", "Power")
+
+        return f
+    end 
+
+    """
+    Compute power for given array of pvalues (Significance level alpha = 0.05)
+    """
     function power(pvalues)
         return length(pvalues[pvalues.<0.05]) / length(pvalues) * 100
     end
 
+    """
+    Compute the pvalues for given data and model
+    """
     function pvalue((data, evts, data_epoch, times), model; quicklmm=true, timeexpanded=false)
         # average over window
         window = 89:89
@@ -91,6 +189,9 @@ end
     end
 
 
+    """
+    Simulate data based on given parameters
+    """
     function sim(nsubj, nitem, seed, params)
 
         # unpack parameters
@@ -141,6 +242,14 @@ end
             @unpack β, σranef, σres, noisetype, noiselevel = params
             d = @dict nsubjs nitems model β σranef σres noisetype noiselevel
             map!(x->replace(string(x), string(typeof(x)) => ""), values(d))
+
+            # create plot
+            f = plot(P, nsubjs, nitems, params, model)
+
+            # save P contour plot to png 
+            mkpath(datadir("plots"))
+            fname = savename(d, "png")
+            save(datadir("plots", fname), f)
 
             # save to csv
             sname = savename(d, "csv")
