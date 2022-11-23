@@ -221,7 +221,7 @@ end
 
 
     function run_iteration(nsubj, nitem, seed, params, model)
-	p = @time "$(myid()):$(gethostname()):  Computing... $nsubj, $nitem, $model" power(pvalue.(sim.(nsubj, nitem, seed, (params,)), model))
+	p = power(pvalue.(sim.(nsubj, nitem, seed, (params,)), model))
 	return p
     end
 
@@ -235,18 +235,19 @@ end
         
         # create and save power matrices
         for model in models
-            
+	    pa = deepcopy(params)
+            @info "Parameters:" seed nsubjs nitems model 
             # compute power for specific combination
-	    P = @time "Create power matrix: " pmap(((nsubj, nitem),)->run_iteration(nsubj, nitem, seed, params, model), reverse([Iterators.product(nsubjs, nitems)...]))
+	    P = @time "Create power matrix" pmap(((nsubj, nitem),)->run_iteration(nsubj, nitem, seed, pa, model), reverse([Iterators.product(nsubjs, nitems)...]))
 	    P = reshape(reverse(P), (length(nsubjs), length(nitems)))
 
             # prepare parameters for logging, loading and saving
-            @unpack β, σranef, σres, noisetype, noiselevel = params
+            @unpack β, σranef, σres, noisetype, noiselevel = pa
             d = @dict nsubjs nitems model β σranef σres noisetype noiselevel
             map!(x->replace(string(x), string(typeof(x)) => ""), values(d))
 
             # create plot
-            f = plot(P, nsubjs, nitems, params, model)
+            f = plot(P, nsubjs, nitems, pa, model)
 
             # save P contour plot to png 
             mkpath(datadir("plots"))
@@ -256,7 +257,7 @@ end
             # save to csv
             sname = savename(d, "csv")
             mkpath(datadir("power"))
-            @time "Saving:" writedlm(datadir("power", sname),  P, ',')
+            @time "Saving" writedlm(datadir("power", sname),  P, ',')
         end
     end
 
@@ -289,6 +290,6 @@ n_dicts = dict_list_count(cfg)
 flush(stderr)
 #@time "All:" pmap(run, dicts)
 
-@time "All:" for p in dicts
+@time "All" for p in dicts
     run(p)
 end
