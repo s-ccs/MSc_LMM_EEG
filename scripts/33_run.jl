@@ -306,8 +306,11 @@ n_dicts = dict_list_count(cfg)
 # Simulate data & compute pvalues
 @info "Creating power matrices... $(n_dicts)"
 flush(stderr)
-#@time "All:" pmap(run, dicts)
 
-@time "All" for p in dicts
-    run(p)
-end
+a = WorkerPool([2,3,4,5,6,7])
+
+@time "All:" pmap(run, a, dicts)
+
+#@time "All" for p in dicts
+#    run(p)
+#end

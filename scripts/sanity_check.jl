@@ -162,9 +162,9 @@ end
     """
     Compute the pvalues for given data and model
     """
-    function pvalue((data, evts, data_epoch, times), model; quicklmm=false, timeexpanded=false)
+    function pvalue((data, evts, data_epoch, times), model; quicklmm=true, timeexpanded=false)
         # average over window
-        window = 87:91
+        window = 89:89
         avg = mean(data_epoch[:, window, :], dims=2)
         evts.dv = [avg...]
 
@@ -176,16 +176,16 @@ end
             y = filter(:cond => ==("B"), mv).dv_mean
             pvalue = HypothesisTests.pvalue(OneSampleTTest(x, y))
 
-        elseif startswith(model, "lmm") && !timeexpanded
-            fm = @formula(dv ~ 1 + cond + (1 + cond | subject)) 
+        elseif model=="lmm" && !timeexpanded
+            fm = @formula(dv ~ 1 + cond + (1 + cond | subject))
 	    fm1 = MixedModel(fm, evts)
-	    fm1.optsum.maxtime = 2
+	    fm1.optsum.maxtime = 1
 	    refit!(fm1, progress=false)
 
-            if model=="lmmquick"
+            if quicklmm
                 pvalue = fm1.pvalues[indexin(["cond: B"], fixefnames(fm1))[1]]
             
-            elseif model=="lmmperm"
+            elseif !quicklmm
                 H0 = coef(fm1) # H0 (slope of stimType=0 ?)
                 H0[2] = 0
                 pvalue = try

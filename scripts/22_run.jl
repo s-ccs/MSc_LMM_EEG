@@ -53,16 +53,11 @@ end
         theme = Theme(fontsize = 30)
         set_theme!(theme)
 
-        #dxs = Int(minimum(nsubj) / step(nsubj))
-        #dys = Int(minimum(nitem) / step(nitem))
-        #m = zeros(length(nsubj)+dxs,  length(nitem)+dys)
+        dxs = Int(minimum(nsubj) / step(nsubj))
+        dys = Int(minimum(nitem) / step(nitem))
+        m = zeros(length(nsubj)+dxs,  length(nitem)+dys)
 
-        #m[dxs+1:end, dys+1:end] = P
-
-        m = zeros(length(nsubj)+1,  length(nitem)+1)
-
-        m[2:end, 2:end] = P
-
+        m[dxs+1:end, dys+1:end] = P
 
         # construct subtitle
 	params["σranef"] = [last(first(params["σranef"]))[1,1], last(first(params["σranef"]))[2,2]]
@@ -102,9 +97,6 @@ end
             ylabelfont="TeX Gyre Heros Makie Bold"
         )
 
-	xlims!(0,maximum(nsubj))
-	ylims!(0,maximum(nitem))
-
         c = collect(reverse(cgrad(:Blues, 10)))[1:10];
         c = [(ci,1) for ci in c]
 
@@ -117,15 +109,8 @@ end
         push!(l, lin)
         end
 
-        #xs = LinRange(0, maximum(nsubj), length(nsubj) + dxs)
-        #ys = LinRange(0, maximum(nitem), length(nitem) + dys)
-
-	xs = LinRange((minimum(nsubj)), maximum(nsubj), length(nsubj))
-	xs = [0.0; collect(xs)]
-
-	ys = LinRange((minimum(nitem)), maximum(nitem), length(nitem))
-	ys = [0.0; collect(ys)]
-
+        xs = LinRange(0, maximum(nsubj), length(nsubj) + dxs)
+            ys = LinRange(0, maximum(nitem), length(nitem) + dys)
         zs = m
 
         contour!(f[1,1], xs, ys, zs, 
@@ -147,6 +132,9 @@ end
             transparency = true,
         )
 
+        xs = LinRange(0, maximum(nsubj), length(nsubj) + dxs)
+        ys = LinRange(0, maximum(nitem), length(nitem) + dys)
+    
         Legend(f[1, 2], l, " " .* string.((1:length(l)).*10).* " %", "Power")
 
         return f
@@ -164,7 +152,7 @@ end
     """
     function pvalue((data, evts, data_epoch, times), model; quicklmm=false, timeexpanded=false)
         # average over window
-        window = 87:91
+        window = 89:89
         avg = mean(data_epoch[:, window, :], dims=2)
         evts.dv = [avg...]
 
@@ -176,16 +164,16 @@ end
             y = filter(:cond => ==("B"), mv).dv_mean
             pvalue = HypothesisTests.pvalue(OneSampleTTest(x, y))
 
-        elseif startswith(model, "lmm") && !timeexpanded
-            fm = @formula(dv ~ 1 + cond + (1 + cond | subject)) 
+        elseif model=="lmm" && !timeexpanded
+            fm = @formula(dv ~ 1 + cond + (1 + cond | subject))
 	    fm1 = MixedModel(fm, evts)
-	    fm1.optsum.maxtime = 2
+	    fm1.optsum.maxtime = 1
 	    refit!(fm1, progress=false)
 
-            if model=="lmmquick"
+            if quicklmm
                 pvalue = fm1.pvalues[indexin(["cond: B"], fixefnames(fm1))[1]]
             
-            elseif model=="lmmperm"
+            elseif !quicklmm
                 H0 = coef(fm1) # H0 (slope of stimType=0 ?)
                 H0[2] = 0
                 pvalue = try
@@ -233,7 +221,8 @@ end
 
 
     function run_iteration(nsubj, nitem, seed, params, model)
-	p = @time "Computer power" power(pvalue.(sim.(nsubj, nitem, seed, (params,)), model))
+	pvalues = @time "Compute pvalues $nsubj, $nitem" pmap(seed->pvalue(sim(nsubj, nitem, seed, params), model), seed) 
+	p = power(pvalues)
 	return p
     end
 
@@ -250,7 +239,7 @@ end
 	    pa = deepcopy(params)
             @info "Parameters:" seed nsubjs nitems model 
             # compute power for specific combination
-	    P = @time "Create power matrix" pmap(((nsubj, nitem),)->run_iteration(nsubj, nitem, seed, pa, model), reverse([Iterators.product(nsubjs, nitems)...]))
+	    P = @time "Create power matrix" [run_iteration(nsubj, nitem, seed, pa, model) for (nsubj, nitem) in  reverse([Iterators.product(nsubjs, nitems)...])]
 	    P = reshape(reverse(P), (length(nsubjs), length(nitems)))
 
             # prepare parameters for logging, loading and saving
@@ -258,24 +247,18 @@ end
             d = @dict nsubjs nitems model β σranef σres noisetype noiselevel
             map!(x->replace(string(x), string(typeof(x)) => ""), values(d))
 
-	    try
-                # create plot
-                f = plot(P, nsubjs, nitems, pa, model)
+            # create plot
+            f = plot(P, nsubjs, nitems, pa, model)
 
-                # save P contour plot to png 
-                mkpath(datadir("plots"))
-                fname = savename(d, "png")
-                save(datadir("plots", fname), f)
-            finally
-                # save to csv
-                sname = savename(d, "csv")
-                mkpath(datadir("power"))
-                @time "Saving" writedlm(datadir("power", sname),  P, ',')
-            end
+            # save P contour plot to png 
+            mkpath(datadir("plots"))
+            fname = savename(d, "png")
+            save(datadir("plots", fname), f)
 
-	    # flush
-	    flush(stdout)
-	    flush(stderr)
+            # save to csv
+            sname = savename(d, "csv")
+            mkpath(datadir("power"))
+            @time "Saving" writedlm(datadir("power", sname),  P, ',')
         end
     end
 
