@@ -45,7 +45,7 @@ Some notes to keep in mind before diving into the step by step instructions:
 ### 0) Instantiate the project
 Navigate in a shell to the current project and start a julia session
 ```console
-    $ julia --project="."
+$ julia --project="."
 ```
 
 Open the package manager and instantiate the project
@@ -57,7 +57,7 @@ julia> ]
 ```
 
 ### 1) Specify the variable parameters
-The `experiments.toml` defines the parameters for a single run. A single run can also span multiple different parameter combinations (See example below).
+The `experiments.toml` defines the parameters for a single run. A single run can also span multiple different parameter combinations (See example below). The example below simulates data for 7.350.000 parameter combinations (= 1000(seeds) x 49(nsubj) x 50(nitems) x 1(beta) x 3(sigmaranef) x 1(sigmares) x 1(noisetype) x 1(noiselevel)). Multiple parameter values can be specified as array within the TOML-file (`noiselevel = [1.0, 2.0]`). 
 
 ```TOML
 seed = {start = 1, step = 1, end = 1000} 	# seeds to simulate data on
@@ -69,23 +69,29 @@ sigmaranef = [					# random effect variances
 	{subj = [0.0, 0.5]}, 
 	{subj = [0.0, 1.0]},
 ]
-sigmares = [0.0001]				# residual variance of the mixed model
+sigmares = 0.0001				# residual variance of the mixed model
 noisetype = "pink"				# noisetype
-noiselevel = [2.0, 1.0]				# noiselevel
+noiselevel = 1.0				# noiselevel
 ```
 
 ### 2) Adjust the SLURM variables to your needs and possible ressources
-- `run.sh`
+The `run.sh` file specifies the slurm cluster variables and calls the julia script `01_run.jl` to start the simulation and analysis. 
+Adjust the the slurm variables with regard to the usable partitions and ressources available.
 
-3) Add slurm job to the queue
+### 3A) Add slurm job to the queue
 ```bash
 sbatch scripts/run.sh {path/to/experiments.toml} {path/to/datadir}
 ```
 
-4) Run script in no SLURM envirionment
+### 3B) Run script in no SLURM envirionment
+> Takes significantly longer! Not recommended!
 ```bash
 julia --project=. --optimize=3 scripts/01_run.jl {path/to/experiments.toml} {path/to/datadir}
 ```
+
+### 4) Create figures
+Adapt scripts 02-06 (srcdir, filters, etc.) and execute each to create the respective plots. 
+
 
 ## Overview of Folder Structure 
 
