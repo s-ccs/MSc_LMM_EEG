@@ -13,7 +13,7 @@ else
     addprocs(2;exeflags="--project=.")
 end
 
-# Imports on every worker
+# Import packages on every worker
 @everywhere using DrWatson
 @everywhere using Dates
 @everywhere @quickactivate "MSc_LMM_EEG"
@@ -58,7 +58,7 @@ end
     """
     Compute the pvalues for given data and model
     """
-    function pvalue((data, evts, data_epoch, times), model; quicklmm=false, timeexpanded=false)
+    function pvalue((data, evts, data_epoch, times), model; timeexpanded=false)
         # average over window
         window = 87:91
         avg = mean(data_epoch[:, window, :], dims=2)
@@ -123,20 +123,26 @@ end
         data, evts = UnfoldSim.convert(eeg, onsets, design)
 
         # epoch data
-        τ = (-0.1, 1.2) #QUICKFIX
-        sfreq = 256 #QUICKFIX
+        τ = (-0.1, 1.2)
+        sfreq = 256
         data_epoch, times = Unfold.epoch(data=data, tbl=evts, τ=τ, sfreq=sfreq)
         
         return data, evts, data_epoch, times
     end
 
 
+    """
+    Inner iteration function (called by pmap) to simulate data and compute power 
+    """
     function run_iteration(nsubj, nitem, seed, params, model)
         p = @time "Compute power" power(pvalue.(sim.(nsubj, nitem, seed, (params,)), model))
         return p
     end
 
 
+    """
+    Outer iteration for parallizing calls and saving
+    """
     function run(params)
         # select outer loop iteration parameters
         seed = pop!(params, "seed")
@@ -158,20 +164,10 @@ end
             d = @dict nsubjs nitems model β σranef σres noisetype noiselevel
             map!(x->replace(string(x), string(typeof(x)) => ""), values(d))
 
-	        try
-                # create plot
-                f = plot(P, nsubjs, nitems, pa, model)
-
-                # save P contour plot to png 
-                mkpath(datadir("plots"))
-                fname = savename(d, "png")
-                save(datadir("plots", fname), f)
-            finally
-                # save to csv
-                sname = savename(d, "csv")
-                mkpath(datadir("power"))
-                @time "Saving" writedlm(datadir("power", sname),  P, ',')
-            end
+            # save to csv
+            sname = savename(d, "csv")
+            mkpath(datadir("power"))
+            @time "Saving" writedlm(datadir("power", sname),  P, ',')         
 
             # flush
             flush(stdout)
@@ -194,7 +190,7 @@ end
 #############
 
 # Include helper functions
-include("../src/config.jl")
+include("../src/helpers.jl")
 
 # Create config
 cfg = config(ARGS[1])

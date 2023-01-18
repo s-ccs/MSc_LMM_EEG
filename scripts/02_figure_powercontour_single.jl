@@ -4,13 +4,13 @@ using DelimitedFiles
 using DrWatson
 
 # include helper functions
-include("../src/config.jl")
+include("../src/helpers.jl")
 
 # activate makie backend
 CairoMakie.activate!()
 
 # specify data directory 
-srcdir = projectdir("data/sanitycheck")
+srcdir = projectdir("data/power")
 files = readdir(srcdir, join=true)
 
 # iterate over all files
@@ -41,7 +41,7 @@ for file in files
     # create figure
     f = Figure(
         backgroundcolor = :white,
-        resolution = (1100, 1100),
+        resolution = (1000, 1000),
         figure_padding = 20
     )
     
@@ -49,8 +49,11 @@ for file in files
     ax = Axis(
         f[1, 1],
         aspect = 1,
-        xlabel = "Number of Items",
-        ylabel = "Probability",
+        #title = "Power Contour",
+        xlabel = "Number of Subjects",
+        ylabel = "Number of Items",
+        #subtitle = subtitle,
+        #subtitlesize = 25.0f0,
         subtitlegap = 10,
         titlegap = 30,
         xautolimitmargin = (0.0, 0.0),
@@ -77,18 +80,30 @@ for file in files
     m = zeros(length(nsubj)+1,  length(nitem)+1)
     m[2:end, 2:end] = P
 
-    # create labels
-    labels = [string(i) for i in nsubj][begin:1:end]
-	
-    # plot series
-    series!(nitem, P[begin:1:end,:], color=collect(cgrad(:thermal, rev = true, categorical = true, 30)), alpha=0.5, labels=labels)
+    # contour plot
+    contour!(ax, xs, ys, m,
+        levels=[10,20,30,40,50,60,70,80,90,95],
+        color=c,
+        linewidth = 2,
+        alpha=1,
+        transparency = true,
+    )
 
-    # limit x- and y-axis
-    xlims!(0,maximum(nitem))
-	ylims!(0,20)
+    # create second color set with all colors at aplha=0, except for the 8th contour line (80 percent level)
+    c2 = repeat([(c[8], 0)], 10)
+    c2[8] = (c[8], 1)
+
+    # overlay the 8th line with a bigger linewidth
+    contour!(ax, xs, ys, m,
+        levels=[10,20,30,40,50,60,70,80,90,95],
+        color=c2,
+        linewidth = 8,
+        alpha=1,
+        transparency = true,
+    )
 
     # create and add super title
-    f[-1, :] = Label(f, "Type 1 Error", fontsize=30, font="TeX Gyre Heros Makie Bold", padding=(0,0,0,0))
+    f[-1, :] = Label(f, "Power Contour", fontsize=30, font="TeX Gyre Heros Makie Bold", padding=(0,0,0,0))
 
     # create subtitle containg parameters
     s1 = savename(@dict β σranef σres; connector="   |   ", equals=" = ", sort=true, digits=5)
@@ -98,8 +113,17 @@ for file in files
     # add subtitle
     f[0, :] = Label(f, subtitle, fontsize=25, font="TeX Gyre Heros Makie")
 
+    # helper code for legend
+    g = Figure(resolution = (800, 600))
+    Axis(g[1,1])
+    l = []
+    for i in 1:10
+        lin = lines!(g[1,1], 1:10, rand(10), color=c[i][1], linewidth=(i==8 ? 5 : 2))
+        push!(l, lin)
+    end
+
     # create legend
-    Legend(f[1,2], ax, "Number of\n subjects", nbanks = 2)
+    Legend(f[1, 2], l, " " .* string.((1:length(l)).*10).* " %", "Power")
 
     # create path
     path = mkpath(projectdir("plots"))
@@ -114,5 +138,5 @@ for file in files
     )
 
     # save plots
-    save(path * "/type1-"*fname, f)
+    save(path * "/single-"*fname, f)
 end

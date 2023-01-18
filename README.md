@@ -37,10 +37,27 @@ The implementation of the modelling-schemes and the comparison is part of the cu
 https://www.zotero.org/groups/4623278/master_thesis_luis_2022
 
 ## Instruction for a new student
-- code was intended to run on a cluster (SLURM) with multiple nodes
-- with multiple combinations of parameters
+Some notes to keep in mind before diving into the step by step instructions:
+- The scripts utilize the functions of the simulation toolbox [UnfoldSim.jl](https://github.com/unfoldtoolbox/UnfoldSim.jl). In the experiments of this thesis only some simulation parameters are kept variable others are fixed by design. The variable parameters are defined in [scripts/experiments.toml](scripts/experiments.toml). 
+
+- The code and script are intended to run on a slurm cluster with multiple nodes. Running the simulation and analysis on your personal laptop can take quite some time... :/
+
+### 0) Instantiate the project
+Navigate in a shell to the current project and start a julia session
+```console
+    $ julia --project="."
+```
+
+Open the package manager and instantiate the project
+```console
+julia> ]
+```
+```console
+(MSc_LMM_EEG) pkg> instantiate
+```
 
 ### 1) Specify the variable parameters
+The `experiments.toml` defines the parameters for a single run. A single run can also span multiple different parameter combinations (See example below).
 
 ```TOML
 seed = {start = 1, step = 1, end = 1000} 	# seeds to simulate data on
@@ -48,14 +65,16 @@ nsubj = {start = 3, step = 2, end = 50}  	# number of subjects in experiment des
 nitem = {start = 2, step = 2, end = 50}		# number of items in experiment design
 beta = [[2.0, 0.5]]							# effect sizes
 sigmaranef = [								# random effect variances 
-        {subj = [0.0, 0.0]}, {subj = [0.0, 0.5]}, {subj = [0.0, 1.0]},
+        {subj = [0.0, 0.0]}, 
+		{subj = [0.0, 0.5]}, 
+		{subj = [0.0, 1.0]},
 ]
-sigmares = [0.0001]
-noisetype = "pink"
-noiselevel = [2.0, 1.0]
+sigmares = [0.0001]							# residual variance of the mixed model
+noisetype = "pink"							# noisetype
+noiselevel = [2.0, 1.0]						# noiselevel
 ```
 
-2) Adjust the SLURM variables to your needs and possible ressources
+### 2) Adjust the SLURM variables to your needs and possible ressources
 - `run.sh`
 
 3) Add slurm job to the queue

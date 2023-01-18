@@ -4,7 +4,7 @@ using DelimitedFiles
 using DrWatson
 
 # include helper functions
-include("../src/config.jl")
+include("../src/helpers.jl")
 
 # activate makie backend
 CairoMakie.activate!()
