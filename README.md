@@ -63,15 +63,15 @@ The `experiments.toml` defines the parameters for a single run. A single run can
 seed = {start = 1, step = 1, end = 1000} 	# seeds to simulate data on
 nsubj = {start = 3, step = 2, end = 50}  	# number of subjects in experiment design
 nitem = {start = 2, step = 2, end = 50}		# number of items in experiment design
-beta = [[2.0, 0.5]]							# effect sizes
-sigmaranef = [								# random effect variances 
-        {subj = [0.0, 0.0]}, 
-		{subj = [0.0, 0.5]}, 
-		{subj = [0.0, 1.0]},
+beta = [[2.0, 0.5]]				# effect sizes
+sigmaranef = [					# random effect variances 
+	{subj = [0.0, 0.0]}, 
+	{subj = [0.0, 0.5]}, 
+	{subj = [0.0, 1.0]},
 ]
-sigmares = [0.0001]							# residual variance of the mixed model
-noisetype = "pink"							# noisetype
-noiselevel = [2.0, 1.0]						# noiselevel
+sigmares = [0.0001]				# residual variance of the mixed model
+noisetype = "pink"				# noisetype
+noiselevel = [2.0, 1.0]				# noiselevel
 ```
 
 ### 2) Adjust the SLURM variables to your needs and possible ressources
