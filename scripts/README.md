@@ -1,19 +1,31 @@
-Scripts etc. - everything that runs something on it's own and is not a function, goes here.
+`experiments.toml`
+---
+Defines the simulation parameters for a single run of the `run.sh` or `01_run.jl`.
 
-Please use easily understandable filenames
+`run.sh`
+---
+Defines the slurm cluster variables (partition, nodes, cpus, etc.). Created for a conveniet way to add a job to the slurm queue with sbatch. Internally `01_run.jl` is called.
 
-E.g.
-```
-Fig1_simulateSimulation.jl
-Results_analysisOfHairColor.jl
-Results_tableResultSizeCalculation.jl
-```
+`01_run.jl`
+---
+Script that simulates the data based on the given parameters and computes the pvalue and power based on the specified analysis method.
+The input to the script is a .toml-file (see [example](../experiments.toml)) listing the simulation parameters and a path to the destination to save the power matrices
 
-or what could also work
-```
-01_loadAndPreprocessData.jl
-02_generateFilteredVersion.jl
-03_analyseERPsForSaccadeAmplitude.jl
-```
+`02_figure_powercontour_single.jl`
+---
 
-But please choose one way to present your scripts and keep with it. If you wonder if it is a good idea to edit this Readme.md to decsribe what each script does. **Yes it is!**
+
+`03_figure_powercontour_multiple.jl`
+---
+
+
+`04_figure_type1error_single.jl`
+---
+
+
+`05_figure_type1error_multiple.jl`
+---
+
+
+`06_figure_power_twostagevslmm.jl`
+---

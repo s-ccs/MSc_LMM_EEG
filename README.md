@@ -79,18 +79,26 @@ The `run.sh` file specifies the slurm cluster variables and calls the julia scri
 Adjust the the slurm variables with regard to the usable partitions and ressources available.
 
 ### 3A) Add slurm job to the queue
-```bash
-sbatch scripts/run.sh {path/to/experiments.toml} {path/to/datadir}
+```console
+$ sbatch scripts/run.sh {path/to/experiments.toml} {path/to/datadir}
 ```
 
 ### 3B) Run script in no SLURM envirionment
 > Takes significantly longer! Not recommended!
-```bash
-julia --project=. --optimize=3 scripts/01_run.jl {path/to/experiments.toml} {path/to/datadir}
+```console
+$ julia --project=. --optimize=3 scripts/01_run.jl {path/to/experiments.toml} {path/to/datadir}
 ```
 
 ### 4) Create figures
 Adapt scripts 02-06 (srcdir, filters, etc.) and execute each to create the respective plots. 
+
+```console
+$ julia --project=. scripts/02_figure_powercontour_single.jl
+```
+
+```console
+$ julia --project=. scripts/03_figure_powercontour_triplets.jl
+```
 
 
 ## Overview of Folder Structure 
