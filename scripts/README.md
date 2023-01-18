@@ -13,11 +13,15 @@ The input to the script is a .toml-file (see [example](../experiments.toml)) lis
 
 `02_figure_powercontour_single.jl`
 ---
+Creates a single power contour plot of the following kind for all power matrices in the specified src directory:
 
+<img src="https://github.com/s-ccs/MSc_LMM_EEG/blob/new-structure/plots/single-model%3Dtwostage_nitems%3D2:2:50_noiselevel%3D1.0_noisetype%3Dpink_nsubjs%3D3:2:49_beta%3D%5B2.0%2C%200.5%5D_ranef%3D(:subj%20%3D%3E%20%5B0.0%200.0%3B%200.0%201.0%5D)_res%3D0.0001.png" width="25%" height="25%">
 
 `03_figure_powercontour_multiple.jl`
 ---
+Creates a triplet (two-stage, lmm, difference) of the following kind for all power matrices in the specified src directory:
 
+<img src="https://github.com/s-ccs/MSc_LMM_EEG/blob/new-structure/plots/triplet-nitems%3D2:2:50_noiselevel%3D1.0_noisetype%3Dpink_nsubjs%3D3:2:49_beta%3D%5B2.0%2C%200.5%5D_ranef%3D(:subj%20%3D%3E%20%5B0.0%200.0%3B%200.0%201.0%5D)_res%3D0.0001.png" width="75%" height="75%">
 
 `04_figure_type1error_single.jl`
 ---
