@@ -129,19 +129,12 @@ $ julia --project=. scripts/03_figure_powercontour_triplets.jl
 │                       structures and modules that are used throughout
 │                       the project and in multiple scripts.
 │
-├── test             <- Folder containing tests for `src`.
-│   └── runtests.jl  <- Main test file
-│   └── setup.jl     <- Setup test environment
-│
 ├── README.md        <- Top-level README. A fellow student needs to be able to
 |   |                   continue your project. Think about her!!
 |
 ├── .gitignore       <- focused on Julia, but some Matlab things as well
 │
 ├── (Manifest.toml)  <- Contains full list of exact package versions used currently.
-|── (Project.toml)   <- Main project file, allows activation and installation.
-└── (Requirements.txt)<- in case of python project - can also be an anaconda file, MakeFile etc.
+└── (Project.toml)   <- Main project file, allows activation and installation.
                         
 ```
-
-\*Instead of having a separate *notebooks* folder, you can also delete it and integrate your notebooks in the scripts folder. However, notebooks should always be marked by adding `nb_` in front of the file name.
