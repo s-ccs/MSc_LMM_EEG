@@ -91,6 +91,7 @@ $ julia --project=. --optimize=3 scripts/01_run.jl {path/to/experiments.toml} {p
 
 ### 4) Create figures
 Adapt scripts 02-06 (srcdir, filters, etc.) and execute each to create the respective plots. 
+> Some Parameters have to be adapted within the code for the following scripts (srcdir, filters, ...)
 
 ```console
 $ julia --project=. scripts/02_figure_powercontour_single.jl
@@ -98,6 +99,18 @@ $ julia --project=. scripts/02_figure_powercontour_single.jl
 
 ```console
 $ julia --project=. scripts/03_figure_powercontour_triplets.jl
+```
+
+```console
+$ julia --project=. scripts/04_figure_type1error_single.jl
+```
+
+```console
+$ julia --project=. scripts/05_figure_type1error_multiple.jl
+```
+
+```console
+$ julia --project=. scripts/06_figure_power_twostagevslmm.jl
 ```
 
 
